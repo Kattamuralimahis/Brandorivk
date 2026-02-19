@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Brandorivk v2.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { margin-bottom: 1.5rem; color: #1a1a1a; }
+        .product { display: grid; grid-template-columns: 100px 1fr 150px 150px 100px; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem; }
+        .product img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; }
+        .product h3 { margin-bottom: 0.3rem; }
+        .product p { color: #666; font-size: 0.9rem; }
+        input { padding: 8px; border: 2px solid #ddd; border-radius: 4px; width: 100%; }
+        input:focus { outline: none; border-color: #e67e22; }
+        .btn { padding: 8px 16px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #d35400; }
+        .stock { font-weight: bold; }
+        .stock.low { color: #e74c3c; }
+        .stock.good { color: #27ae60; }
+        .save-msg { color: #27ae60; font-size: 0.85rem; margin-top: 0.3rem; }
+        .version { text-align: center; color: #999; font-size: 0.9rem; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 Product Manager <span style="font-size:0.9rem;color:#999;">v2.0</span></h1>
+        <div id="products"></div>
+        <p class="version">Changes auto-save to localStorage • Clear browser cache to reload from config.js</p>
+    </div>
+    <script src="js/config.js?v=2.0"></script>
+    <script>
+        const productsDiv = document.getElementById('products');
+        function loadProducts() {
+            productsDiv.innerHTML = '';
+            getProducts().forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'product';
+                div.innerHTML = `
+                    <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
+                    <div><h3>${p.name}</h3><p>${p.category} • ${p.description}</p></div>
+                    <div><label style="font-size:0.85rem;color:#666;">Price ($)</label><input type="number" step="0.01" value="${p.price}" id="price-${p.id}"></div>
+                    <div><label style="font-size:0.85rem;color:#666;">Stock</label><input type="number" value="${p.stock}" id="stock-${p.id}"><div class="stock ${p.stock<5?'low':'good'}">${p.stock<5?'⚠️ Low':'✅ Good'}</div></div>
+                    <div><button class="btn" onclick="save(${p.id})">Save</button><div id="msg-${p.id}" class="save-msg"></div></div>`;
+                productsDiv.appendChild(div);
+            });
+        }
+        function save(id) {
+            const products = getProducts();
+            const product = products.find(p => p.id === id);
+            product.price = parseFloat(document.getElementById(`price-${id}`).value);
+            product.stock = parseInt(document.getElementById(`stock-${id}`).value);
+            saveConfig();
+            const msg = document.getElementById(`msg-${id}`);
+            msg.textContent = '✓ Saved!';
+            setTimeout(() => msg.textContent = '', 2000);
+            loadProducts();
+        }
+        loadProducts();
+    </script>
+</body>
+</html>
