@@ -17,7 +17,7 @@ const CONFIG = {
             name: "Classic White Tee",
             category: "tshirt",
             price: 25.00,
-            image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
+            image: "https://naga236.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-2.jpeg?w=500",
             description: "100% premium cotton, breathable fit",
             stock: 15,
             sizes: ["S", "M", "L", "XL"]
@@ -27,7 +27,7 @@ const CONFIG = {
             name: "Black Graphic Tee",
             category: "tshirt",
             price: 30.00,
-            image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500",
+            image: "https://naga236.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-2.jpeg?w=500",
             description: "Premium print, fade-resistant design",
             stock: 8,
             sizes: ["S", "M", "L", "XL", "XXL"]
@@ -141,4 +141,5 @@ function loadConfig() {
 }
 
 // Initialize
+
 loadConfig();
