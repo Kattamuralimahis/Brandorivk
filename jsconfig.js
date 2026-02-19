@@ -10,7 +10,7 @@ const CONFIG = {
             name: "Classic White Tee",
             category: "tshirt",
             price: 25.00,
-            image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&q=80",
+            image: "https://naga236.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1-1.jpeg?w=500&q=80",
             description: "100% premium cotton, breathable fit",
             stock: 15
         },
@@ -120,4 +120,5 @@ function loadConfig() {
 }
 
 // Initialize
+
 loadConfig();
