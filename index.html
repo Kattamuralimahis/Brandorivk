@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brandorivk - Premium Apparel</title>
+<style>
+:root{ --primary:#6956ff; --line:#e9edfb; --text:#1a1a2e; --success:#27ae60; --warning:#f39c12; --info:#3498db; --danger:#e74c3c; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:Arial, sans-serif; background:#f5f7fb; color:var(--text); }
+header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); z-index:100; }
+.logo{ font-size:1.3rem; font-weight:700; cursor:pointer; }
+.header-btns{ display:flex; gap:10px; }
+.cart-pill, .orders-pill, .admin-pill{ padding:8px 14px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:#fff; font-weight:600; }
+.cart-pill:hover, .orders-pill:hover, .admin-pill:hover{ background:#f8f9fa; }
+.hero{ padding:60px 5%; background:linear-gradient(135deg,#171f45,#403ab4); color:#fff; text-align:center; }
+.hero h1{ margin-bottom:10px; }
+.wrap{ max-width:1100px; margin:40px auto; padding:0 5%; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:20px; }
+.card{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; transition:transform .2s; }
+.card:hover{ transform:translateY(-5px); }
+.card img{ width:100%; height:240px; object-fit:cover; display:block; background:#f8f9fa; cursor:pointer; }
+.info{ padding:15px; }
+.price{ font-weight:bold; color:var(--primary); font-size:1.1rem; }
+.add{ margin-top:10px; width:100%; padding:10px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; }
+.add:hover{ opacity:0.9; }
+#productView{ display:none; padding:20px 5%; max-width:900px; margin:0 auto; }
+#productView.active{ display:block; }
+#productGrid{ display:block; }
+#productGrid.hidden{ display:none; }
+.back-btn{ display:inline-flex; align-items:center; gap:5px; padding:8px 16px; background:#fff; border:1px solid var(--line); border-radius:20px; cursor:pointer; margin-bottom:20px; font-weight:600; }
+.back-btn:hover{ background:#f8f9fa; }
+.product-detail{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:0; }
+@media(max-width:700px){ .product-detail{ grid-template-columns:1fr; } }
+.product-detail img{ width:100%; height:400px; object-fit:cover; background:#f8f9fa; }
+.detail-info{ padding:30px; }
+.detail-info h2{ margin-bottom:10px; font-size:1.5rem; }
+.detail-info .price{ font-size:1.5rem; margin:10px 0 20px; display:block; }
+.detail-info p{ color:#666; line-height:1.6; margin-bottom:20px; }
+.detail-info .add{ font-size:1.1rem; padding:12px; }
+.cart{ position:fixed; inset:0; display:none; justify-content:flex-end; background:rgba(0,0,0,.4); z-index:200; }
+.cart.open{ display:flex; }
+.cart-panel{ width:400px; max-width:90%; background:#fff; height:100%; padding:20px; display:flex; flex-direction:column; }
+.cart-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:15px; border-bottom:1px solid var(--line); }
+.cart-items{ flex:1; overflow-y:auto; padding:15px 0; }
+.cart-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+.checkout{ border-top:2px solid var(--line); padding-top:15px; }
+.checkout-btn{ width:100%; padding:12px; border:none; border-radius:8px; background:#1f2350; color:#fff; cursor:pointer; font-weight:600; margin-top:10px; }
+.continue-btn{ width:100%; padding:12px; border:2px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600; }
+.checkout-form{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.checkout-form.open{ display:flex; }
+.form-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; position:relative; }
+.form-box h2{ margin-bottom:20px; color:var(--text); }
+.form-group{ margin-bottom:15px; }
+.form-group label{ display:block; margin-bottom:5px; font-weight:600; color:#333; }
+.form-group input, .form-group textarea, .form-group select{ width:100%; padding:12px; border:2px solid var(--line); border-radius:8px; font-size:1rem; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus{ outline:none; border-color:var(--primary); }
+.form-row{ display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+.submit-btn{ width:100%; padding:15px; background:var(--success); color:#fff; border:none; border-radius:8px; font-size:1.1rem; font-weight:700; cursor:pointer; margin-top:10px; }
+.submit-btn:hover{ opacity:0.9; }
+.cancel-btn{ width:100%; padding:12px; border:2px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600; }
+.orders-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.orders-modal.open{ display:flex; }
+.orders-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:900px; max-height:90vh; overflow-y:auto; position:relative; }
+.orders-box h2{ margin-bottom:20px; color:var(--text); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+.export-btn{ padding:8px 16px; background:var(--success); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.9rem; }
+.export-btn:hover{ opacity:0.9; }
+.order-card{ background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:20px; border-left:4px solid var(--primary); }
+.order-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; }
+.order-id{ font-size:1.1rem; font-weight:700; color:var(--text); }
+.order-date{ color:#666; font-size:0.9rem; }
+.order-status{ padding:6px 12px; border-radius:20px; font-size:0.85rem; font-weight:600; }
+.status-confirmed{ background:#fff3cd; color:#856404; }
+.status-dispatched{ background:#d1ecf1; color:#0c5460; }
+.status-transit{ background:#d4edda; color:#155724; }
+.status-delivered{ background:#c3e6cb; color:#155724; }
+.status-tracker{ display:flex; justify-content:space-between; margin:20px 0; position:relative; }
+.status-tracker::before{ content:''; position:absolute; top:15px; left:0; right:0; height:3px; background:#e0e0e0; z-index:1; }
+.status-step{ display:flex; flex-direction:column; align-items:center; position:relative; z-index:2; flex:1; }
+.status-icon{ width:30px; height:30px; border-radius:50%; background:#e0e0e0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; margin-bottom:5px; font-size:0.8rem; }
+.status-step.active .status-icon{ background:var(--primary); }
+.status-step.completed .status-icon{ background:var(--success); }
+.status-label{ font-size:0.75rem; color:#666; text-align:center; }
+.status-step.active .status-label, .status-step.completed .status-label{ color:var(--text); font-weight:600; }
+.order-items{ background:#fff; padding:15px; border-radius:6px; margin:15px 0; }
+.order-item{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+.order-item:last-child{ border-bottom:none; }
+.customer-info{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.9rem; color:#666; margin:15px 0; }
+.customer-info strong{ color:var(--text); }
+.order-total{ font-weight:bold; color:var(--primary); font-size:1.2rem; margin-top:15px; padding-top:15px; border-top:2px solid var(--line); }
+.payment-method{ background:#fff; padding:15px; border-radius:6px; margin:15px 0; }
+.payment-method p{ margin:5px 0; color:#666; }
+.payment-method strong{ color:var(--text); }
+.admin-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.admin-modal.open{ display:flex; }
+.admin-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:1000px; max-height:90vh; overflow-y:auto; position:relative; }
+.admin-box h2{ margin-bottom:20px; color:var(--text); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+.admin-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:30px; }
+.stat-card{ background:linear-gradient(135deg, var(--primary), #403ab4); color:#fff; padding:20px; border-radius:8px; text-align:center; }
+.stat-card h3{ font-size:2rem; margin-bottom:5px; }
+.stat-card p{ opacity:0.9; }
+.orders-table{ width:100%; border-collapse:collapse; margin-top:20px; }
+.orders-table th, .orders-table td{ padding:12px; text-align:left; border-bottom:1px solid var(--line); }
+.orders-table th{ background:#f8f9fa; font-weight:600; }
+.orders-table tr:hover{ background:#f8f9fa; }
+.action-btn{ padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem; margin:2px; }
+.btn-dispatch{ background:var(--info); color:#fff; }
+.btn-transit{ background:var(--warning); color:#fff; }
+.btn-deliver{ background:var(--success); color:#fff; }
+.toast{ position:fixed; bottom:20px; right:20px; background:var(--success); color:white; padding:12px 24px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2); z-index:1000; display:none; animation:slideIn .3s ease; }
+.toast.error{ background:var(--danger); }
+@keyframes slideIn{ from{ transform:translateX(100%); opacity:0 } to{ transform:translateX(0); opacity:1 } }
+.close-btn{ position:absolute; top:15px; right:20px; border:none; background:none; font-size:28px; cursor:pointer; color:#666; }
+.close-btn:hover{ color:#000; }
+.empty-state{ text-align:center; padding:3rem; color:#666; }
+.empty-state-icon{ font-size:3rem; margin-bottom:1rem; }
+@media(max-width:600px){ .header-btns{ flex-direction:column; gap:5px; } .form-row{ grid-template-columns:1fr; } .customer-info{ grid-template-columns:1fr; } .status-tracker{ overflow-x:auto; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()">🛍️ Brandorivk</div>
+  <div class="header-btns">
+    <button class="admin-pill" onclick="showAdmin()">👨‍💼 Admin</button>
+    <button class="orders-pill" onclick="showOrders()">📦 My Orders</button>
+    <button class="cart-pill" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Define Your Style</h1>
+  <p>Premium streetwear essentials designed for bold everyday fashion.</p>
+</section>
+
+<main class="wrap">
+  <div id="productGrid">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="productView">
+    <button class="back-btn" onclick="goHome()">← Back to Shop</button>
+    <div class="product-detail" id="productDetail"></div>
+  </div>
+</main>
+
+<!-- Cart Modal -->
+<div class="cart" id="cartModal">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <h3 style="margin:0;">Your Cart</h3>
+      <button id="closeCart" style="border:none;background:none;font-size:24px;cursor:pointer;">×</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="checkout">
+      <p style="display:flex;justify-content:space-between;font-size:1.2rem;"><strong>Total:</strong> <strong style="color:var(--primary);">₹<span id="total">0</span></strong></p>
+      <button class="checkout-btn" onclick="openCheckoutForm()">Proceed to Checkout</button>
+      <button class="continue-btn" onclick="cartModal.classList.remove('open')">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout Form Modal -->
+<div class="checkout-form" id="checkoutModal">
+  <div class="form-box">
+    <button class="close-btn" onclick="closeCheckoutForm()">×</button>
+    <h2>📦 Checkout</h2>
+    <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
+      <p style="font-weight:600;margin-bottom:10px;">Order Summary:</p>
+      <div id="checkoutSummary"></div>
+      <p style="margin-top:15px;display:flex;justify-content:space-between;font-size:1.1rem;">
+        <strong>Total Amount:</strong> <strong style="color:var(--primary);">₹<span id="checkoutTotal">0</span></strong>
+      </p>
+    </div>
+    <div class="payment-method">
+      <p><strong>💳 Payment Method:</strong></p>
+      <select id="paymentMethod" style="margin-top:5px;">
+        <option value="cod">💵 Cash on Delivery (COD)</option>
+        <option value="upi">📱 UPI Payment</option>
+        <option value="card">💳 Credit/Debit Card</option>
+        <option value="netbanking">🏦 Net Banking</option>
+      </select>
+    </div>
+    <form id="orderForm" onsubmit="placeOrder(event)">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="custName" required placeholder="John Doe">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="custEmail" required placeholder="john@example.com">
+        </div>
+        <div class="form-group">
+          <label>Phone Number *</label>
+          <input type="tel" id="custPhone" required placeholder="9876543210" pattern="[0-9]{10}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Shipping Address *</label>
+        <textarea id="custAddress" required rows="3" placeholder="House no., Street, Area"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="custCity" required placeholder="Mumbai">
+        </div>
+        <div class="form-group">
+          <label>PIN Code *</label>
+          <input type="text" id="custPincode" required placeholder="400001" pattern="[0-9]{6}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>State *</label>
+          <input type="text" id="custState" required placeholder="Maharashtra">
+        </div>
+        <div class="form-group">
+          <label>Landmark</label>
+          <input type="text" id="custLandmark" placeholder="Near temple/mall">
+        </div>
+      </div>
+      <button type="submit" class="submit-btn">✅ Place Order</button>
+      <button type="button" class="cancel-btn" onclick="closeCheckoutForm()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- Orders Modal -->
+<div class="orders-modal" id="ordersModal">
+  <div class="orders-box">
+    <button class="close-btn" onclick="closeOrders()">×</button>
+    <h2>
+      📦 My Orders
+      <button class="export-btn" onclick="exportOrdersToExcel()">📊 Export to Excel</button>
+    </h2>
+    <div id="ordersList" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="admin-modal" id="adminModal">
+  <div class="admin-box">
+    <button class="close-btn" onclick="closeAdmin()">×</button>
+    <h2>
+      👨‍💼 Admin Panel - All Orders
+      <button class="export-btn" onclick="exportOrdersToExcel()">📊 Export to Excel</button>
+    </h2>
+    <div class="admin-stats">
+      <div class="stat-card"><h3 id="statTotal">0</h3><p>Total Orders</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #f39c12, #e67e22);"><h3 id="statPending">0</h3><p>Pending</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #3498db, #2980b9);"><h3 id="statDispatched">0</h3><p>Dispatched</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #27ae60, #229954);"><h3 id="statDelivered">0</h3><p>Delivered</p></div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="orders-table">
+        <thead>
+          <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="adminOrdersTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== PRODUCTS =====
+const products = [
+  { id: 1, name: "Premium Tee", price: 799, image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Premium+Tee", description: "100% premium cotton, breathable fit." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Urban+Shirt", description: "Premium print, fade-resistant design." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Street+Pants", description: "Stretch fabric, all-day comfort." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Hoodie", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Denim", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Shorts", description: "Multiple pockets, summer ready." }
+];
+
+const ORDER_STATUS = {
+  CONFIRMED: 'confirmed',
+  DISPATCHED: 'dispatched',
+  IN_TRANSIT: 'transit',
+  DELIVERED: 'delivered'
+};
+
+// ===== FIXED: Initialize with proper error handling =====
+let cart = [];
+let orders = [];
+
+function loadData(){
+  try {
+    const savedCart = localStorage.getItem("brandorivk_cart");
+    const savedOrders = localStorage.getItem("brandorivk_orders");
+    
+    console.log("📦 Loading data from localStorage...");
+    console.log("Cart saved:", savedCart);
+    console.log("Orders saved:", savedOrders);
+    
+    cart = savedCart ? JSON.parse(savedCart) : [];
+    orders = savedOrders ? JSON.parse(savedOrders) : [];
+    
+    console.log("✅ Cart loaded:", cart.length, "items");
+    console.log("✅ Orders loaded:", orders.length, "orders");
+  } catch(e) {
+    console.error("❌ Error loading data:", e);
+    cart = [];
+    orders = [];
+  }
+}
+
+function saveData(){
+  try {
+    localStorage.setItem("brandorivk_cart", JSON.stringify(cart));
+    localStorage.setItem("brandorivk_orders", JSON.stringify(orders));
+    console.log("✅ Data saved to localStorage");
+    console.log("Orders saved:", orders.length);
+    return true;
+  } catch(e) {
+    console.error("❌ Error saving data:", e);
+    showToast("Error saving data!", "error");
+    return false;
+  }
+}
+
+// Load data on page load
+loadData();
+
+let currentProductId = null;
+
+// DOM Elements
+const grid = document.getElementById("grid");
+const productGrid = document.getElementById("productGrid");
+const productView = document.getElementById("productView");
+const productDetail = document.getElementById("productDetail");
+const cartModal = document.getElementById("cartModal");
+const checkoutModal = document.getElementById("checkoutModal");
+const ordersModal = document.getElementById("ordersModal");
+const adminModal = document.getElementById("adminModal");
+const cartCount = document.getElementById("cartCount");
+const cartItems = document.getElementById("cartItems");
+const totalEl = document.getElementById("total");
+
+function formatCurrency(amount){
+  return "₹" + Number(amount).toLocaleString('en-IN');
+}
+
+function renderProducts(){
+  grid.innerHTML = products.map(p => `
+    <div class="card">
+      <img src="${p.image}" alt="${p.name}" referrerpolicy="no-referrer" 
+           onerror="this.src='https://via.placeholder.com/400x400/6956ff/ffffff?text=${encodeURIComponent(p.name)}'"
+           onclick="showProduct(${p.id})">
+      <div class="info">
+        <h4 style="margin:0 0 5px 0;">${p.name}</h4>
+        <p class="price">${formatCurrency(p.price)}</p>
+        <button class="add" onclick="addToCart(${p.id}); event.stopPropagation();">Add to Cart</button>
+      </div>
+    </div>`).join('');
+}
+
+function showProduct(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  currentProductId = id;
+  productDetail.innerHTML = `
+    <img src="${p.image}" alt="${p.name}" referrerpolicy="no-referrer"
+         onerror="this.src='https://via.placeholder.com/600x600/6956ff/ffffff?text=${encodeURIComponent(p.name)}'">
+    <div class="detail-info">
+      <h2>${p.name}</h2>
+      <span class="price">${formatCurrency(p.price)}</span>
+      <p>${p.description || "Premium quality product."}</p>
+      <p style="color:#666;font-size:0.9rem;margin-bottom:20px;"><strong>Stock:</strong> <span style="color:#27ae60;">✅ In Stock</span></p>
+      <button class="add" onclick="addToCart(${p.id})">Add to Cart - ${formatCurrency(p.price)}</button>
+    </div>`;
+  productGrid.classList.add("hidden");
+  productView.classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+function goHome(){
+  productView.classList.remove("active");
+  productGrid.classList.remove("hidden");
+  currentProductId = null;
+}
+
+function addToCart(id){
+  const product = products.find(p => p.id === id);
+  if(!product) return;
+  const existing = cart.find(i => i.id === id);
+  if(existing){ existing.qty++; showToast(`+1 ${product.name} added`); }
+  else { cart.push({...product, qty: 1}); showToast(`${product.name} added to cart!`); }
+  updateCart();
+  saveData();
+}
+
+function updateCart(){
+  const count = cart.reduce((sum, i) => sum + i.qty, 0);
+  cartCount.textContent = count;
+  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  totalEl.textContent = Number(total).toLocaleString('en-IN');
+  
+  if (cart.length === 0) {
+    cartItems.innerHTML = "<div class='empty-state'><div class='empty-state-icon'>🛒</div><p>Your cart is empty</p></div>";
+  } else {
+    cartItems.innerHTML = cart.map((item, i) => `
+      <div class="cart-item">
+        <div><strong>${item.name}</strong><br><small style='color:#666;'>${formatCurrency(item.price)} × ${item.qty}</small></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <strong>${formatCurrency(item.price * item.qty)}</strong>
+          <button onclick="removeItem(${i})" style='border:none;background:#e74c3c;color:white;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;'>Remove</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function removeItem(i){ cart.splice(i, 1); updateCart(); saveData(); showToast("Item removed"); }
+
+function openCheckoutForm(){
+  if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
+  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  document.getElementById("checkoutTotal").textContent = Number(total).toLocaleString('en-IN');
+  document.getElementById("checkoutSummary").innerHTML = cart.map(item => `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+      <span>${item.name} × ${item.qty}</span>
+      <span>${formatCurrency(item.price * item.qty)}</span>
+    </div>
+  `).join('');
+  checkoutModal.classList.add("open");
+}
+
+function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
+
+// ===== FIXED: Place Order with proper saving =====
+function placeOrder(e){
+  e.preventDefault();
+  
+  console.log("🛒 Placing order...");
+  console.log("Cart items:", cart.length);
+  
+  if(cart.length === 0){
+    showToast("Cart is empty!", "error");
+    return;
+  }
+  
+  const paymentMethod = document.getElementById("paymentMethod").value;
+  const paymentLabels = {
+    cod: "💵 Cash on Delivery",
+    upi: "📱 UPI Payment",
+    card: "💳 Credit/Debit Card",
+    netbanking: "🏦 Net Banking"
+  };
+  
+  const order = {
+    orderId: "ORD-" + Date.now(),
+    orderDate: new Date().toLocaleString('en-IN'),
+    customer: {
+      name: document.getElementById("custName").value,
+      email: document.getElementById("custEmail").value,
+      phone: document.getElementById("custPhone").value,
+      address: document.getElementById("custAddress").value,
+      city: document.getElementById("custCity").value,
+      pincode: document.getElementById("custPincode").value,
+      state: document.getElementById("custState").value,
+      landmark: document.getElementById("custLandmark").value || ""
+    },
+    items: [...cart],
+    total: cart.reduce((sum, i) => sum + i.price * i.qty, 0),
+    paymentMethod: paymentMethod,
+    paymentLabel: paymentLabels[paymentMethod],
+    status: ORDER_STATUS.CONFIRMED,
+    statusHistory: [
+      { status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order confirmed successfully" }
+    ]
+  };
+  
+  console.log("📦 Order created:", order);
+  
+  // Add order to orders array
+  orders.unshift(order);
+  console.log("📦 Total orders now:", orders.length);
+  
+  // Save to localStorage
+  const saved = saveData();
+  
+  if(saved){
+    // Clear cart
+    cart = [];
+    updateCart();
+    
+    // Show success
+    showToast("Order placed successfully! 🎉");
+    closeCheckoutForm();
+    cartModal.classList.remove("open");
+    document.getElementById("orderForm").reset();
+    
+    // Show confirmation
+    setTimeout(() => {
+      alert(`✅ Order Confirmed!\n\nOrder ID: ${order.orderId}\nTotal: ${formatCurrency(order.total)}\n\nYour order has been saved!\nClick "My Orders" to view it.`);
+    }, 500);
+  } else {
+    showToast("Error saving order! Please try again.", "error");
+  }
+}
+
+function updateOrderStatus(orderId, newStatus){
+  const order = orders.find(o => o.orderId === orderId);
+  if(!order) return;
+  order.status = newStatus;
+  const statusMessages = {
+    [ORDER_STATUS.CONFIRMED]: "Order confirmed successfully",
+    [ORDER_STATUS.DISPATCHED]: "Order dispatched from warehouse",
+    [ORDER_STATUS.IN_TRANSIT]: "Order is in transit",
+    [ORDER_STATUS.DELIVERED]: "Order delivered successfully"
+  };
+  order.statusHistory.push({ status: newStatus, date: new Date().toLocaleString('en-IN'), message: statusMessages[newStatus] });
+  saveData();
+  showToast(`Order status updated!`);
+  showOrders();
+  showAdmin();
+}
+
+// ===== FIXED: Show Orders with debugging =====
+function showOrders(){
+  console.log("📦 showOrders() called");
+  console.log("Orders array length:", orders.length);
+  console.log("Orders data:", orders);
+  
+  if(orders.length === 0){
+    document.getElementById("ordersList").innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <h3>No orders yet</h3>
+        <p>Start shopping to see your orders here!</p>
+        <p style="margin-top:15px;color:#999;font-size:0.9rem;">Orders: ${orders.length}</p>
+      </div>`;
+  } else {
+    document.getElementById("ordersList").innerHTML = orders.map(order => {
+      const statusLabels = {
+        [ORDER_STATUS.CONFIRMED]: "Confirmed",
+        [ORDER_STATUS.DISPATCHED]: "Dispatched",
+        [ORDER_STATUS.IN_TRANSIT]: "In Transit",
+        [ORDER_STATUS.DELIVERED]: "Delivered"
+      };
+      const statusClasses = {
+        [ORDER_STATUS.CONFIRMED]: "status-confirmed",
+        [ORDER_STATUS.DISPATCHED]: "status-dispatched",
+        [ORDER_STATUS.IN_TRANSIT]: "status-transit",
+        [ORDER_STATUS.DELIVERED]: "status-delivered"
+      };
+      const getStatusStep = (status) => {
+        const steps = { [ORDER_STATUS.CONFIRMED]: 1, [ORDER_STATUS.DISPATCHED]: 2, [ORDER_STATUS.IN_TRANSIT]: 3, [ORDER_STATUS.DELIVERED]: 4 };
+        return steps[status];
+      };
+      const currentStep = getStatusStep(order.status);
+      
+      return `
+      <div class="order-card">
+        <div class="order-header">
+          <div>
+            <div class="order-id">📦 ${order.orderId}</div>
+            <div class="order-date">📅 ${order.orderDate}</div>
+          </div>
+          <span class="order-status ${statusClasses[order.status]}">${statusLabels[order.status]}</span>
+        </div>
+        <div class="status-tracker">
+          <div class="status-step ${currentStep >= 1 ? 'completed' : ''}"><div class="status-icon">✓</div><div class="status-label">Confirmed</div></div>
+          <div class="status-step ${currentStep >= 2 ? 'completed' : ''}"><div class="status-icon">📦</div><div class="status-label">Dispatched</div></div>
+          <div class="status-step ${currentStep >= 3 ? 'completed' : ''}"><div class="status-icon">🚚</div><div class="status-label">In Transit</div></div>
+          <div class="status-step ${currentStep >= 4 ? 'completed' : ''}"><div class="status-icon">🏠</div><div class="status-label">Delivered</div></div>
+        </div>
+        <div style="background:#fff;padding:15px;border-radius:6px;margin:15px 0;">
+          <p style="font-weight:600;margin-bottom:10px;">📋 Order Timeline:</p>
+          ${order.statusHistory.map(h => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;"><span>${h.message}</span><span style="color:#666;">${h.date}</span></div>`).join('')}
+        </div>
+        <div class="order-items">
+          <p style="font-weight:600;margin-bottom:10px;">🛍️ Items (${order.items.length}):</p>
+          ${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}
+        </div>
+        <div class="customer-info">
+          <div><strong>👤</strong> ${order.customer.name}</div>
+          <div><strong>📧</strong> ${order.customer.email}</div>
+          <div><strong>📞</strong> ${order.customer.phone}</div>
+          <div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div>
+        </div>
+        <p style="color:#666;font-size:0.9rem;margin:10px 0;"><strong>🏠</strong> ${order.customer.address}${order.customer.landmark ? ', ' + order.customer.landmark : ''}, ${order.customer.city}, ${order.customer.state}</p>
+        <div class="payment-method"><p><strong>💳 Payment:</strong> ${order.paymentLabel}</p></div>
+        <div class="order-total">💰 <strong>Total Paid: ${formatCurrency(order.total)}</strong></div>
+        ${order.status !== ORDER_STATUS.DELIVERED ? `<div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--line);"><p style="font-size:0.85rem;color:#666;margin-bottom:10px;">🔧 Update Status:</p><div style="display:flex;gap:10px;flex-wrap:wrap;">${order.status === ORDER_STATUS.CONFIRMED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DISPATCHED}')" class="action-btn btn-dispatch">Mark Dispatched</button>` : ''}${order.status === ORDER_STATUS.DISPATCHED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.IN_TRANSIT}')" class="action-btn btn-transit">Mark In Transit</button>` : ''}${order.status === ORDER_STATUS.IN_TRANSIT ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DELIVERED}')" class="action-btn btn-deliver">Mark Delivered</button>` : ''}</div></div>` : ''}
+      </div>`;
+    }).join('');
+  }
+  ordersModal.classList.add("open");
+}
+
+function closeOrders(){ ordersModal.classList.remove("open"); }
+
+function showAdmin(){
+  const totalOrders = orders.length;
+  const pending = orders.filter(o => o.status === ORDER_STATUS.CONFIRMED).length;
+  const dispatched = orders.filter(o => o.status === ORDER_STATUS.DISPATCHED).length;
+  const delivered = orders.filter(o => o.status === ORDER_STATUS.DELIVERED).length;
+  document.getElementById("statTotal").textContent = totalOrders;
+  document.getElementById("statPending").textContent = pending;
+  document.getElementById("statDispatched").textContent = dispatched;
+  document.getElementById("statDelivered").textContent = delivered;
+  if(orders.length === 0){
+    document.getElementById("adminOrdersTable").innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#666;">No orders yet</td></tr>';
+  } else {
+    document.getElementById("adminOrdersTable").innerHTML = orders.map(order => {
+      const statusLabels = { [ORDER_STATUS.CONFIRMED]: "Confirmed", [ORDER_STATUS.DISPATCHED]: "Dispatched", [ORDER_STATUS.IN_TRANSIT]: "In Transit", [ORDER_STATUS.DELIVERED]: "Delivered" };
+      return `<tr><td><strong>${order.orderId}</strong></td><td>${order.customer.name}<br><small style="color:#666;">${order.customer.phone}</small></td><td>${order.items.length} items</td><td>${formatCurrency(order.total)}</td><td><span style="padding:4px 8px;background:${order.status === ORDER_STATUS.DELIVERED ? '#c3e6cb' : '#fff3cd'};border-radius:4px;font-size:0.85rem;">${statusLabels[order.status]}</span></td><td><small>${order.orderDate.split(',')[0]}</small></td><td>${order.status === ORDER_STATUS.CONFIRMED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DISPATCHED}')" class="action-btn btn-dispatch">Dispatch</button>` : ''}${order.status === ORDER_STATUS.DISPATCHED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.IN_TRANSIT}')" class="action-btn btn-transit">Transit</button>` : ''}${order.status === ORDER_STATUS.IN_TRANSIT ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DELIVERED}')" class="action-btn btn-deliver">Deliver</button>` : ''}<button onclick="alert('Order: ${order.orderId}\\nCustomer: ${order.customer.name}\\nTotal: ${formatCurrency(order.total)}')" class="action-btn" style="background:#95a5a6;color:#fff;">View</button></td></tr>`;
+    }).join('');
+  }
+  adminModal.classList.add("open");
+}
+
+function closeAdmin(){ adminModal.classList.remove("open"); }
+
+function exportOrdersToExcel(){
+  if(orders.length === 0){ showToast("No orders to export!", "error"); return; }
+  let csv = "Order ID,Date,Customer Name,Email,Phone,Address,City,State,PIN,Items,Total,Payment Method,Status\n";
+  orders.forEach(order => {
+    const items = order.items.map(i => `${i.name} x${i.qty}`).join('; ');
+    const row = [order.orderId, order.orderDate, order.customer.name, order.customer.email, order.customer.phone, order.customer.address, order.customer.city, order.customer.state, order.customer.pincode, items, order.total, order.paymentLabel, order.status].map(field => `"${field}"`).join(',');
+    csv += row + "\n";
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Brandorivk_Orders_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("Orders exported to Excel! 📊");
+}
+
+function showToast(msg, type = "success"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast" + (type === "error" ? " error" : "");
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2500);
+}
+
+// Event Listeners
+document.getElementById("cartBtn").onclick = () => { updateCart(); cartModal.classList.add("open"); };
+document.getElementById("closeCart").onclick = () => cartModal.classList.remove("open");
+cartModal.onclick = e => { if(e.target === cartModal) cartModal.classList.remove("open"); };
+checkoutModal.onclick = e => { if(e.target === checkoutModal) closeCheckoutForm(); };
+ordersModal.onclick = e => { if(e.target === ordersModal) closeOrders(); };
+adminModal.onclick = e => { if(e.target === adminModal) closeAdmin(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAdmin(); goHome(); } });
+
+// Initialize
+renderProducts();
+updateCart();
+console.log("✅ Brandorivk loaded successfully!");
+console.log("📦 Products:", products.length);
+console.log("🛒 Cart items:", cart.length);
+console.log("📦 Orders:", orders.length);
+</script>
+</body>
+</html>
