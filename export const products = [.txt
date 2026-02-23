@@ -1,0 +1,79 @@
+export const products = [
+  {
+    id: 1,
+    name: "CloudSoft Essential Tee",
+    category: "tshirt",
+    price: 29,
+    priceTag: "Budget Pick",
+    description: "Ultra-soft cotton jersey tee designed for everyday comfort.",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+    placeholder: "assets/placeholders/tshirt.svg",
+    stock: 18
+  },
+  {
+    id: 2,
+    name: "Metro Oxford Shirt",
+    category: "shirt",
+    price: 54,
+    priceTag: "Best Seller",
+    description: "Smart tailored oxford with breathable weave and clean lines.",
+    image: "https://images.unsplash.com/photo-1602810319428-019690571b5b?auto=format&fit=crop&w=900&q=80",
+    placeholder: "assets/placeholders/shirt.svg",
+    stock: 13
+  },
+  {
+    id: 3,
+    name: "Weekend Chino Pants",
+    category: "pants",
+    price: 61,
+    priceTag: "New Arrival",
+    description: "Stretch-infused chinos that move with you all day.",
+    image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=900&q=80",
+    placeholder: "assets/placeholders/pants.svg",
+    stock: 9
+  },
+  {
+    id: 4,
+    name: "Typography Street Tee",
+    category: "tshirt",
+    price: 35,
+    priceTag: "Streetwear",
+    description: "Relaxed fit tee with statement front print and washed finish.",
+    image: "https://images.unsplash.com/photo-1583743814966-8936f37f4678?auto=format&fit=crop&w=900&q=80",
+    placeholder: "assets/placeholders/tshirt.svg",
+    stock: 7
+  },
+  {
+    id: 5,
+    name: "Linen Breeze Shirt",
+    category: "shirt",
+    price: 49,
+    priceTag: "Summer Edit",
+    description: "Lightweight linen blend shirt built for warm weather days.",
+    image: "https://demo.themegrill.com/storefront/wp-content/uploads/sites/2/2018/03/product-2.jpg",
+    placeholder: "assets/placeholders/shirt.svg",
+    stock: 16
+  },
+  {
+    id: 6,
+    name: "Stack Denim Jeans",
+    category: "pants",
+    price: 68,
+    priceTag: "Premium",
+    description: "Classic straight denim with rich color retention and durability.",
+    image: "https://demo.themegrill.com/storefront/wp-content/uploads/sites/2/2018/03/product-7.jpg",
+    placeholder: "assets/placeholders/pants.svg",
+    stock: 11
+  },
+  {
+    id: 7,
+    name: "WordPress Spotlight Tee",
+    category: "tshirt",
+    price: 42,
+    priceTag: "WordPress Image",
+    description: "Featured tee using your provided WordPress-hosted product image.",
+    image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg",
+    placeholder: "assets/placeholders/tshirt.svg",
+    stock: 12
+  }
+];
