@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brandorivk - Premium Apparel</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
 <style>
 :root{ --primary:#6956ff; --line:#e9edfb; --text:#1a1a2e; --success:#27ae60; --warning:#f39c12; --info:#3498db; --danger:#e74c3c; }
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -107,6 +113,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .btn-dispatch{ background:var(--info); color:#fff; }
 .btn-transit{ background:var(--warning); color:#fff; }
 .btn-deliver{ background:var(--success); color:#fff; }
+.btn-logout{ background:var(--danger); color:#fff; }
 .toast{ position:fixed; bottom:20px; right:20px; background:var(--success); color:white; padding:12px 24px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2); z-index:1000; display:none; animation:slideIn .3s ease; }
 .toast.error{ background:var(--danger); }
 @keyframes slideIn{ from{ transform:translateX(100%); opacity:0 } to{ transform:translateX(0); opacity:1 } }
@@ -122,7 +129,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 <header>
   <div class="logo" onclick="goHome()">🛍️ Brandorivk</div>
   <div class="header-btns">
-    <button class="admin-pill" onclick="showAdmin()">👨‍💼 Admin</button>
+    <button class="admin-pill" onclick="checkAdminAuth()" id="adminBtn">👨‍💼 Admin</button>
     <button class="orders-pill" onclick="showOrders()">📦 My Orders</button>
     <button class="cart-pill" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
   </div>
@@ -237,6 +244,26 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
   </div>
 </div>
 
+<!-- Admin Login Modal -->
+<div class="checkout-form" id="adminLoginModal">
+  <div class="form-box" style="max-width:400px;">
+    <button class="close-btn" onclick="closeAdminLogin()">×</button>
+    <h2>🔐 Admin Login</h2>
+    <form onsubmit="firebaseLogin(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="adminEmail" required placeholder="admin@brandorivk.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPass" required placeholder="Enter password">
+      </div>
+      <button type="submit" class="submit-btn">Login</button>
+      <button type="button" class="cancel-btn" onclick="closeAdminLogin()">Cancel</button>
+    </form>
+  </div>
+</div>
+
 <!-- Admin Panel Modal -->
 <div class="admin-modal" id="adminModal">
   <div class="admin-box">
@@ -244,6 +271,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
     <h2>
       👨‍💼 Admin Panel - All Orders
       <button class="export-btn" onclick="exportOrdersToExcel()">📊 Export to Excel</button>
+      <button class="action-btn btn-logout" onclick="adminLogout()" style="margin-left:10px;">🚪 Logout</button>
     </h2>
     <div class="admin-stats">
       <div class="stat-card"><h3 id="statTotal">0</h3><p>Total Orders</p></div>
@@ -265,7 +293,26 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== PRODUCTS =====
+// ============================================
+// 🔥 FIREBASE CONFIGURATION - REPLACE WITH YOURS!
+// ============================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ============================================
+// PRODUCTS
+// ============================================
 const products = [
   { id: 1, name: "Premium Tee", price: 799, image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Premium+Tee", description: "100% premium cotton, breathable fit." },
   { id: 2, name: "Urban Shirt", price: 1299, image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Urban+Shirt", description: "Premium print, fade-resistant design." },
@@ -282,7 +329,9 @@ const ORDER_STATUS = {
   DELIVERED: 'delivered'
 };
 
-// ===== FIXED: Initialize with proper error handling =====
+// ============================================
+// DATA STORAGE (localStorage for demo, Firebase for production)
+// ============================================
 let cart = [];
 let orders = [];
 
@@ -290,18 +339,11 @@ function loadData(){
   try {
     const savedCart = localStorage.getItem("brandorivk_cart");
     const savedOrders = localStorage.getItem("brandorivk_orders");
-    
-    console.log("📦 Loading data from localStorage...");
-    console.log("Cart saved:", savedCart);
-    console.log("Orders saved:", savedOrders);
-    
     cart = savedCart ? JSON.parse(savedCart) : [];
     orders = savedOrders ? JSON.parse(savedOrders) : [];
-    
-    console.log("✅ Cart loaded:", cart.length, "items");
-    console.log("✅ Orders loaded:", orders.length, "orders");
+    console.log("✅ Loaded:", orders.length, "orders");
   } catch(e) {
-    console.error("❌ Error loading data:", e);
+    console.error("Error loading:", e);
     cart = [];
     orders = [];
   }
@@ -311,22 +353,93 @@ function saveData(){
   try {
     localStorage.setItem("brandorivk_cart", JSON.stringify(cart));
     localStorage.setItem("brandorivk_orders", JSON.stringify(orders));
-    console.log("✅ Data saved to localStorage");
-    console.log("Orders saved:", orders.length);
     return true;
   } catch(e) {
-    console.error("❌ Error saving data:", e);
-    showToast("Error saving data!", "error");
+    console.error("Error saving:", e);
     return false;
   }
 }
 
-// Load data on page load
 loadData();
 
-let currentProductId = null;
+// ============================================
+// FIREBASE AUTH FUNCTIONS
+// ============================================
 
-// DOM Elements
+// Check admin authentication
+function checkAdminAuth(){
+  const user = auth.currentUser;
+  if(user){
+    // Already logged in
+    showAdmin();
+  } else {
+    // Show login modal
+    document.getElementById("adminLoginModal").classList.add("open");
+  }
+}
+
+// Close admin login
+function closeAdminLogin(){
+  document.getElementById("adminLoginModal").classList.remove("open");
+  document.getElementById("adminEmail").value = "";
+  document.getElementById("adminPass").value = "";
+}
+
+// Firebase login
+function firebaseLogin(e){
+  e.preventDefault();
+  const email = document.getElementById("adminEmail").value;
+  const pass = document.getElementById("adminPass").value;
+  
+  auth.signInWithEmailAndPassword(email, pass)
+    .then((userCredential) => {
+      showToast("Admin login successful! 🔓");
+      closeAdminLogin();
+      showAdmin();
+    })
+    .catch((error) => {
+      showToast("Login failed: " + error.message, "error");
+    });
+}
+
+// Admin logout
+function adminLogout(){
+  auth.signOut().then(() => {
+    showToast("Logged out successfully");
+    closeAdmin();
+    updateAdminButton();
+  });
+}
+
+// Check if admin is logged in
+function isAdminLoggedIn(){
+  return auth.currentUser !== null;
+}
+
+// Update admin button based on login status
+function updateAdminButton(){
+  const btn = document.getElementById("adminBtn");
+  const user = auth.currentUser;
+  if(user){
+    btn.textContent = "👨‍💼 Admin ✓";
+    btn.style.background = "#d4edda";
+    btn.style.borderColor = "#27ae60";
+  } else {
+    btn.textContent = "👨‍💼 Admin";
+    btn.style.background = "#fff";
+    btn.style.borderColor = "#e9edfb";
+  }
+}
+
+// Listen for auth state changes
+auth.onAuthStateChanged((user) => {
+  updateAdminButton();
+  console.log("Auth state:", user ? "Logged in" : "Logged out");
+});
+
+// ============================================
+// DOM ELEMENTS
+// ============================================
 const grid = document.getElementById("grid");
 const productGrid = document.getElementById("productGrid");
 const productView = document.getElementById("productView");
@@ -339,6 +452,9 @@ const cartCount = document.getElementById("cartCount");
 const cartItems = document.getElementById("cartItems");
 const totalEl = document.getElementById("total");
 
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 function formatCurrency(amount){
   return "₹" + Number(amount).toLocaleString('en-IN');
 }
@@ -360,7 +476,6 @@ function renderProducts(){
 function showProduct(id){
   const p = products.find(x => x.id === id);
   if(!p) return;
-  currentProductId = id;
   productDetail.innerHTML = `
     <img src="${p.image}" alt="${p.name}" referrerpolicy="no-referrer"
          onerror="this.src='https://via.placeholder.com/600x600/6956ff/ffffff?text=${encodeURIComponent(p.name)}'">
@@ -379,7 +494,6 @@ function showProduct(id){
 function goHome(){
   productView.classList.remove("active");
   productGrid.classList.remove("hidden");
-  currentProductId = null;
 }
 
 function addToCart(id){
@@ -429,25 +543,15 @@ function openCheckoutForm(){
 
 function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
 
-// ===== FIXED: Place Order with proper saving =====
+// ============================================
+// PLACE ORDER (Save to localStorage + Firebase optional)
+// ============================================
 function placeOrder(e){
   e.preventDefault();
-  
-  console.log("🛒 Placing order...");
-  console.log("Cart items:", cart.length);
-  
-  if(cart.length === 0){
-    showToast("Cart is empty!", "error");
-    return;
-  }
+  if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
   
   const paymentMethod = document.getElementById("paymentMethod").value;
-  const paymentLabels = {
-    cod: "💵 Cash on Delivery",
-    upi: "📱 UPI Payment",
-    card: "💳 Credit/Debit Card",
-    netbanking: "🏦 Net Banking"
-  };
+  const paymentLabels = { cod: "💵 Cash on Delivery", upi: "📱 UPI Payment", card: "💳 Credit/Debit Card", netbanking: "🏦 Net Banking" };
   
   const order = {
     orderId: "ORD-" + Date.now(),
@@ -467,40 +571,28 @@ function placeOrder(e){
     paymentMethod: paymentMethod,
     paymentLabel: paymentLabels[paymentMethod],
     status: ORDER_STATUS.CONFIRMED,
-    statusHistory: [
-      { status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order confirmed successfully" }
-    ]
+    statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order confirmed successfully" }]
   };
   
-  console.log("📦 Order created:", order);
-  
-  // Add order to orders array
   orders.unshift(order);
-  console.log("📦 Total orders now:", orders.length);
-  
-  // Save to localStorage
   const saved = saveData();
   
   if(saved){
-    // Clear cart
     cart = [];
     updateCart();
-    
-    // Show success
     showToast("Order placed successfully! 🎉");
     closeCheckoutForm();
     cartModal.classList.remove("open");
     document.getElementById("orderForm").reset();
-    
-    // Show confirmation
     setTimeout(() => {
-      alert(`✅ Order Confirmed!\n\nOrder ID: ${order.orderId}\nTotal: ${formatCurrency(order.total)}\n\nYour order has been saved!\nClick "My Orders" to view it.`);
+      alert(`✅ Order Confirmed!\n\nOrder ID: ${order.orderId}\nTotal: ${formatCurrency(order.total)}\n\nClick "My Orders" to view.`);
     }, 500);
-  } else {
-    showToast("Error saving order! Please try again.", "error");
   }
 }
 
+// ============================================
+// ORDER MANAGEMENT
+// ============================================
 function updateOrderStatus(orderId, newStatus){
   const order = orders.find(o => o.orderId === orderId);
   if(!order) return;
@@ -518,47 +610,25 @@ function updateOrderStatus(orderId, newStatus){
   showAdmin();
 }
 
-// ===== FIXED: Show Orders with debugging =====
 function showOrders(){
-  console.log("📦 showOrders() called");
-  console.log("Orders array length:", orders.length);
-  console.log("Orders data:", orders);
-  
   if(orders.length === 0){
     document.getElementById("ordersList").innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📦</div>
         <h3>No orders yet</h3>
         <p>Start shopping to see your orders here!</p>
-        <p style="margin-top:15px;color:#999;font-size:0.9rem;">Orders: ${orders.length}</p>
       </div>`;
   } else {
     document.getElementById("ordersList").innerHTML = orders.map(order => {
-      const statusLabels = {
-        [ORDER_STATUS.CONFIRMED]: "Confirmed",
-        [ORDER_STATUS.DISPATCHED]: "Dispatched",
-        [ORDER_STATUS.IN_TRANSIT]: "In Transit",
-        [ORDER_STATUS.DELIVERED]: "Delivered"
-      };
-      const statusClasses = {
-        [ORDER_STATUS.CONFIRMED]: "status-confirmed",
-        [ORDER_STATUS.DISPATCHED]: "status-dispatched",
-        [ORDER_STATUS.IN_TRANSIT]: "status-transit",
-        [ORDER_STATUS.DELIVERED]: "status-delivered"
-      };
-      const getStatusStep = (status) => {
-        const steps = { [ORDER_STATUS.CONFIRMED]: 1, [ORDER_STATUS.DISPATCHED]: 2, [ORDER_STATUS.IN_TRANSIT]: 3, [ORDER_STATUS.DELIVERED]: 4 };
-        return steps[status];
-      };
+      const statusLabels = { [ORDER_STATUS.CONFIRMED]: "Confirmed", [ORDER_STATUS.DISPATCHED]: "Dispatched", [ORDER_STATUS.IN_TRANSIT]: "In Transit", [ORDER_STATUS.DELIVERED]: "Delivered" };
+      const statusClasses = { [ORDER_STATUS.CONFIRMED]: "status-confirmed", [ORDER_STATUS.DISPATCHED]: "status-dispatched", [ORDER_STATUS.IN_TRANSIT]: "status-transit", [ORDER_STATUS.DELIVERED]: "status-delivered" };
+      const getStatusStep = (status) => ({ [ORDER_STATUS.CONFIRMED]: 1, [ORDER_STATUS.DISPATCHED]: 2, [ORDER_STATUS.IN_TRANSIT]: 3, [ORDER_STATUS.DELIVERED]: 4 }[status]);
       const currentStep = getStatusStep(order.status);
       
       return `
       <div class="order-card">
         <div class="order-header">
-          <div>
-            <div class="order-id">📦 ${order.orderId}</div>
-            <div class="order-date">📅 ${order.orderDate}</div>
-          </div>
+          <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
           <span class="order-status ${statusClasses[order.status]}">${statusLabels[order.status]}</span>
         </div>
         <div class="status-tracker">
@@ -593,15 +663,25 @@ function showOrders(){
 
 function closeOrders(){ ordersModal.classList.remove("open"); }
 
+// ============================================
+// ADMIN PANEL (PROTECTED)
+// ============================================
 function showAdmin(){
+  if(!isAdminLoggedIn()){
+    checkAdminAuth();
+    return;
+  }
+  
   const totalOrders = orders.length;
   const pending = orders.filter(o => o.status === ORDER_STATUS.CONFIRMED).length;
   const dispatched = orders.filter(o => o.status === ORDER_STATUS.DISPATCHED).length;
   const delivered = orders.filter(o => o.status === ORDER_STATUS.DELIVERED).length;
+  
   document.getElementById("statTotal").textContent = totalOrders;
   document.getElementById("statPending").textContent = pending;
   document.getElementById("statDispatched").textContent = dispatched;
   document.getElementById("statDelivered").textContent = delivered;
+  
   if(orders.length === 0){
     document.getElementById("adminOrdersTable").innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#666;">No orders yet</td></tr>';
   } else {
@@ -615,6 +695,9 @@ function showAdmin(){
 
 function closeAdmin(){ adminModal.classList.remove("open"); }
 
+// ============================================
+// EXPORT TO EXCEL
+// ============================================
 function exportOrdersToExcel(){
   if(orders.length === 0){ showToast("No orders to export!", "error"); return; }
   let csv = "Order ID,Date,Customer Name,Email,Phone,Address,City,State,PIN,Items,Total,Payment Method,Status\n";
@@ -635,6 +718,9 @@ function exportOrdersToExcel(){
   showToast("Orders exported to Excel! 📊");
 }
 
+// ============================================
+// TOAST NOTIFICATION
+// ============================================
 function showToast(msg, type = "success"){
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -643,22 +729,25 @@ function showToast(msg, type = "success"){
   setTimeout(() => t.style.display = "none", 2500);
 }
 
-// Event Listeners
+// ============================================
+// EVENT LISTENERS
+// ============================================
 document.getElementById("cartBtn").onclick = () => { updateCart(); cartModal.classList.add("open"); };
 document.getElementById("closeCart").onclick = () => cartModal.classList.remove("open");
 cartModal.onclick = e => { if(e.target === cartModal) cartModal.classList.remove("open"); };
 checkoutModal.onclick = e => { if(e.target === checkoutModal) closeCheckoutForm(); };
 ordersModal.onclick = e => { if(e.target === ordersModal) closeOrders(); };
 adminModal.onclick = e => { if(e.target === adminModal) closeAdmin(); };
-document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAdmin(); goHome(); } });
+document.getElementById("adminLoginModal").onclick = e => { if(e.target === document.getElementById("adminLoginModal")) closeAdminLogin(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAdmin(); closeAdminLogin(); goHome(); } });
 
-// Initialize
+// ============================================
+// INITIALIZE
+// ============================================
 renderProducts();
 updateCart();
-console.log("✅ Brandorivk loaded successfully!");
-console.log("📦 Products:", products.length);
-console.log("🛒 Cart items:", cart.length);
-console.log("📦 Orders:", orders.length);
+updateAdminButton();
+console.log("✅ Brandorivk loaded with Firebase Auth!");
 </script>
 </body>
 </html>
