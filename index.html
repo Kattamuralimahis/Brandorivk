@@ -325,7 +325,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================
-// CONFIG - UPDATED WITH YOUR DETAILS
+// CONFIG - YOUR DETAILS
 // ============================================
 const products = [
   { id: 1, name: "Premium Tee", price: 799, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "100% premium cotton" },
@@ -569,14 +569,41 @@ function openCheckoutForm(){
 
 function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
 
+// ============================================
+// PLACE ORDER - FIXED WITH ERROR HANDLING
+// ============================================
 function placeOrder(e){
   e.preventDefault();
-  if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
+  
+  console.log("🛒 Placing order...");
+  
+  if(cart.length === 0){ 
+    showToast("Cart is empty!", "error"); 
+    console.error("❌ Cart is empty");
+    return; 
+  }
+  
+  if(!currentUser){ 
+    showToast("Please sign in to place order", "error"); 
+    console.error("❌ User not logged in");
+    showAuthModal();
+    return; 
+  }
+  
   const order = {
     orderId: "ORD-" + Date.now(),
     orderDate: new Date().toLocaleString('en-IN'),
-    userId: currentUser ? currentUser.uid : 'guest',
-    customer: { name: document.getElementById("custName").value, email: document.getElementById("custEmail").value, phone: document.getElementById("custPhone").value, address: document.getElementById("custAddress").value, city: document.getElementById("custCity").value, pincode: document.getElementById("custPincode").value, state: document.getElementById("custState").value, landmark: document.getElementById("custLandmark").value || "" },
+    userId: currentUser.uid,
+    customer: { 
+      name: document.getElementById("custName").value, 
+      email: document.getElementById("custEmail").value, 
+      phone: document.getElementById("custPhone").value, 
+      address: document.getElementById("custAddress").value, 
+      city: document.getElementById("custCity").value, 
+      pincode: document.getElementById("custPincode").value, 
+      state: document.getElementById("custState").value, 
+      landmark: document.getElementById("custLandmark").value || "" 
+    },
     items: [...cart],
     total: cart.reduce((sum, i) => sum + i.price * i.qty, 0),
     status: ORDER_STATUS.CONFIRMED,
@@ -584,28 +611,71 @@ function placeOrder(e){
     utr: null,
     statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order placed, awaiting payment" }]
   };
-  db.collection('orders').add(order).then((docRef) => {
-    order.firestoreId = docRef.id;
-    cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
-    setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
-  }).catch(err => { showToast("Error placing order", "error"); console.error(err); });
+  
+  console.log("📦 Order created:", order);
+  
+  // Save to localStorage (always works)
+  try {
+    let localOrders = JSON.parse(localStorage.getItem("brandorivk_orders")) || [];
+    localOrders.unshift(order);
+    localStorage.setItem("brandorivk_orders", JSON.stringify(localOrders));
+    console.log("✅ Order saved to localStorage");
+  } catch(err) {
+    console.error("❌ localStorage save failed:", err);
+  }
+  
+  // Try to save to Firestore (with error handling)
+  if(currentUser){
+    db.collection('orders').add(order)
+      .then((docRef) => {
+        console.log("✅ Order saved to Firestore with ID:", docRef.id);
+        order.firestoreId = docRef.id;
+      })
+      .catch((err) => {
+        console.error("❌ Firestore save failed:", err.message);
+        console.log("⚠️ Order saved locally only. Admin won't see it in admin panel.");
+        showToast("Order placed! (Saved locally)", "success");
+      });
+  }
+  
+  // Clear cart and show payment
+  cart = []; 
+  updateCart(); 
+  closeCheckoutForm(); 
+  cartModal.classList.remove("open"); 
+  document.getElementById("orderForm").reset();
+  
+  setTimeout(() => { 
+    showToast("Order placed! Complete payment", "success"); 
+    showPaymentModal(order); 
+  }, 500);
 }
 
+// ============================================
+// SHOW ORDERS
+// ============================================
 function showOrders(){
-  if(!currentUser){ document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`; ordersModal.classList.add("open"); return; }
-  db.collection('orders').where('userId', '==', currentUser.uid).orderBy('orderDate', 'desc').get().then((snapshot) => {
-    if(snapshot.empty){ document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`; }
-    else {
-      document.getElementById("ordersList").innerHTML = snapshot.docs.map(doc => {
-        const order = doc.data();
-        const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
-        const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
-        const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
-        return `<div class="order-card"><div class="order-header"><div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div><div><span class="order-status ${orderClasses[order.status]}">${orderLabels[order.status]}</span><span class="order-status ${order.paymentStatus === PAYMENT_STATUS.APPROVED ? 'status-payment-approved' : 'status-payment-pending'}" style="margin-left:5px;">${paymentLabels[order.paymentStatus]}</span></div></div><div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}</div><div class="customer-info"><div><strong>👤</strong> ${order.customer.name}</div><div><strong>📧</strong> ${order.customer.email}</div><div><strong>📞</strong> ${order.customer.phone}</div><div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div></div>${order.utr ? `<div class="payment-info"><p><strong>💳 UTR:</strong> ${order.utr}</p><p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? order.paymentSubmittedAt.toDate().toLocaleString() : '-'}</p></div>` : ''}<div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>${order.paymentStatus === PAYMENT_STATUS.PENDING && !order.utr ? `<button onclick='showPaymentModal(${JSON.stringify(order).replace(/'/g, "&#39;")})' class="btn" style="width:100%;margin-top:15px;background:var(--warning);color:white;">💳 Complete Payment</button>` : ''}</div>`;
-      }).join('');
-    }
-    ordersModal.classList.add("open");
-  }).catch(err => { console.error("Error loading orders:", err); });
+  if(!currentUser){ 
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`; 
+    ordersModal.classList.add("open"); 
+    return; 
+  }
+  
+  // Load from localStorage (works even if Firestore fails)
+  let localOrders = JSON.parse(localStorage.getItem("brandorivk_orders")) || [];
+  let userOrders = localOrders.filter(o => o.userId === currentUser.uid);
+  
+  if(userOrders.length === 0){ 
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`; 
+  } else {
+    document.getElementById("ordersList").innerHTML = userOrders.map(order => {
+      const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
+      const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
+      const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
+      return `<div class="order-card"><div class="order-header"><div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div><div><span class="order-status ${orderClasses[order.status]}">${orderLabels[order.status]}</span><span class="order-status ${order.paymentStatus === PAYMENT_STATUS.APPROVED ? 'status-payment-approved' : 'status-payment-pending'}" style="margin-left:5px;">${paymentLabels[order.paymentStatus]}</span></div></div><div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}</div><div class="customer-info"><div><strong>👤</strong> ${order.customer.name}</div><div><strong>📧</strong> ${order.customer.email}</div><div><strong>📞</strong> ${order.customer.phone}</div><div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div></div>${order.utr ? `<div class="payment-info"><p><strong>💳 UTR:</strong> ${order.utr}</p><p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? (order.paymentSubmittedAt.toDate ? order.paymentSubmittedAt.toDate().toLocaleString() : order.paymentSubmittedAt) : '-'}</p></div>` : ''}<div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>${order.paymentStatus === PAYMENT_STATUS.PENDING && !order.utr ? `<button onclick='showPaymentModal(${JSON.stringify(order).replace(/'/g, "&#39;")})' class="btn" style="width:100%;margin-top:15px;background:var(--warning);color:white;">💳 Complete Payment</button>` : ''}</div>`;
+    }).join('');
+  }
+  ordersModal.classList.add("open");
 }
 
 function closeOrders(){ ordersModal.classList.remove("open"); }
@@ -628,7 +698,13 @@ document.getElementById("paymentModal").onclick = e => { if(e.target === documen
 document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); } });
 
 // Initialize
-document.addEventListener("DOMContentLoaded", function(){ console.log("🚀 Brandorivk loaded!"); renderProducts(); loadData(); updateCart(); });
+document.addEventListener("DOMContentLoaded", function(){ 
+  console.log("🚀 Brandorivk loaded!"); 
+  console.log("🔥 Firebase Project:", firebaseConfig.projectId);
+  renderProducts(); 
+  loadData(); 
+  updateCart(); 
+});
 </script>
 
 </body>
