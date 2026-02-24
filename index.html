@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
-:root{ --primary:#6956ff; --line:#e9edfb; --text:#1a1a2e; --success:#27ae60; --danger:#e74c3c; }
+:root{ --primary:#6956ff; --line:#e9edfb; --text:#1a1a2e; --success:#27ae60; --danger:#e74c3c; --warning:#f39c12; }
 *{ box-sizing:border-box; margin:0; padding:0; }
 body{ font-family:Arial, sans-serif; background:#f5f7fb; color:var(--text); }
 header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); z-index:100; }
@@ -47,6 +47,9 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .auth-tabs{ display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid var(--line); }
 .auth-tab{ flex:1; padding:10px; background:none; border:none; cursor:pointer; font-weight:600; font-size:1rem; }
 .auth-tab.active{ color:var(--primary); border-bottom:3px solid var(--primary); margin-bottom:-2px; }
+.auth-notice{ background:#f8f9fa; padding:15px; border-radius:8px; margin:15px 0; text-align:center; border-left:4px solid var(--primary); }
+.auth-notice p{ color:#666; font-size:0.9rem; }
+.auth-notice strong{ color:var(--primary); }
 .cart-modal{ position:fixed; inset:0; display:none; justify-content:flex-end; background:rgba(0,0,0,.4); z-index:200; }
 .cart-modal.open{ display:flex; }
 .cart-panel{ width:400px; max-width:90%; background:#fff; height:100%; padding:20px; display:flex; flex-direction:column; }
@@ -69,13 +72,19 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .status-dispatched{ background:#d1ecf1; color:#0c5460; }
 .status-transit{ background:#d4edda; color:#155724; }
 .status-delivered{ background:#c3e6cb; color:#155724; }
+.status-payment-pending{ background:#ffeaa7; color:#d63031; }
+.status-payment-approved{ background:#55efc4; color:#00b894; }
 .order-items{ background:#fff; padding:15px; border-radius:6px; margin:15px 0; }
 .order-item{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
 .customer-info{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.9rem; color:#666; margin:15px 0; }
 .customer-info strong{ color:var(--text); }
 .order-total{ font-weight:bold; color:var(--primary); font-size:1.2rem; margin-top:15px; padding-top:15px; border-top:2px solid var(--line); }
+.payment-info{ background:#f8f9fa; padding:15px; border-radius:8px; margin:15px 0; }
+.payment-info p{ margin:5px 0; color:#666; }
+.payment-info strong{ color:var(--text); }
 .toast{ position:fixed; bottom:20px; right:20px; background:var(--success); color:white; padding:12px 24px; border-radius:8px; z-index:1000; display:none; animation:slideIn .3s ease; }
 .toast.error{ background:var(--danger); }
+.toast.warning{ background:var(--warning); }
 @keyframes slideIn{ from{ transform:translateX(100%); opacity:0 } to{ transform:translateX(0); opacity:1 } }
 .close-btn{ position:absolute; top:15px; right:20px; border:none; background:none; font-size:28px; cursor:pointer; color:#666; }
 .close-btn:hover{ color:#000; }
@@ -87,6 +96,29 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .profile-avatar{ width:80px; height:80px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:bold; margin:0 auto 20px; }
 .profile-name{ font-size:1.3rem; font-weight:700; margin-bottom:5px; }
 .profile-email{ color:#666; margin-bottom:20px; }
+.payment-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:400; padding:20px; }
+.payment-modal.open{ display:flex; }
+.payment-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:500px; }
+.qr-container{ text-align:center; margin:20px 0; padding:20px; background:#f8f9fa; border-radius:8px; }
+.qr-code{ width:200px; height:200px; margin:0 auto; background:#fff; border:2px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:3rem; }
+.timer{ font-size:1.5rem; font-weight:700; color:var(--danger); text-align:center; margin:15px 0; }
+.verification-status{ padding:10px; border-radius:6px; margin:15px 0; text-align:center; font-weight:600; }
+.verification-status.pending{ background:#ffeaa7; color:#d63031; }
+.verification-status.approved{ background:#55efc4; color:#00b894; }
+.verification-status.rejected{ background:#fab1a0; color:#d63031; }
+.admin-panel{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:1000px; max-height:90vh; overflow-y:auto; }
+.admin-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:30px; }
+.stat-card{ background:linear-gradient(135deg, var(--primary), #403ab4); color:#fff; padding:20px; border-radius:8px; text-align:center; }
+.stat-card h3{ font-size:2rem; margin-bottom:5px; }
+.stat-card p{ opacity:0.9; }
+.orders-table{ width:100%; border-collapse:collapse; margin-top:20px; }
+.orders-table th, .orders-table td{ padding:12px; text-align:left; border-bottom:1px solid var(--line); }
+.orders-table th{ background:#f8f9fa; font-weight:600; }
+.orders-table tr:hover{ background:#f8f9fa; }
+.action-btn{ padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem; margin:2px; }
+.btn-approve{ background:var(--success); color:#fff; }
+.btn-reject{ background:var(--danger); color:#fff; }
+.btn-view{ background:var(--info); color:#fff; }
 @media(max-width:768px){ 
   .header-btns{ flex-direction:column; gap:5px; } 
   .form-row{ grid-template-columns:1fr; } 
@@ -103,12 +135,9 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
   <div class="header-btns">
     <button class="btn" onclick="checkAdmin()" id="adminBtn" style="display:none;">👨‍💼 Admin</button>
     <button class="btn" onclick="checkUserAndShowOrders()">📦 My Orders</button>
-    
-    <!-- User Auth Section - Updates after login -->
     <div id="userAuthSection">
       <button class="btn" onclick="showAuthModal()">👤 Sign In</button>
     </div>
-    
     <button class="btn" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
   </div>
 </header>
@@ -140,7 +169,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
   </div>
 </div>
 
-<!-- Auth Modal (Login/Signup) -->
+<!-- Auth Modal -->
 <div class="modal" id="authModal">
   <div class="modal-box" style="max-width:450px;">
     <button class="close-btn" onclick="closeAuthModal()">×</button>
@@ -163,6 +192,10 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
       </div>
       <button type="submit" class="submit-btn">Sign In</button>
       <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+      
+      <div class="auth-notice">
+        <p>🆕 Don't have an account? <strong><a href="#" onclick="switchAuthTab('signup'); return false;" style="color:var(--primary);">Create Account</a></strong></p>
+      </div>
     </form>
     
     <!-- Sign Up Form -->
@@ -185,11 +218,15 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
       </div>
       <button type="submit" class="submit-btn">Create Account</button>
       <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+      
+      <div class="auth-notice">
+        <p>✅ Already have an account? <strong><a href="#" onclick="switchAuthTab('signin'); return false;" style="color:var(--primary);">Sign In</a></strong></p>
+      </div>
     </form>
   </div>
 </div>
 
-<!-- User Profile Modal (Shows after login) -->
+<!-- Profile Modal -->
 <div class="profile-modal" id="profileModal">
   <div class="profile-box">
     <button class="close-btn" onclick="closeProfileModal()">×</button>
@@ -202,6 +239,53 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
     </div>
     <button class="btn" onclick="userSignOut()" style="background:var(--danger); color:white; width:100%;">🚪 Sign Out</button>
     <button class="btn" onclick="closeProfileModal(); showOrders()" style="margin-top:10px; width:100%;">📦 View My Orders</button>
+  </div>
+</div>
+
+<!-- Payment Modal with UPI QR -->
+<div class="payment-modal" id="paymentModal">
+  <div class="payment-box">
+    <button class="close-btn" onclick="closePaymentModal()">×</button>
+    <h2>💳 Complete Payment</h2>
+    
+    <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin:15px 0;">
+      <p><strong>Order ID:</strong> <span id="paymentOrderId">-</span></p>
+      <p><strong>Amount to Pay:</strong> <span id="paymentAmount" style="color:var(--primary); font-size:1.2rem; font-weight:bold;">₹0</span></p>
+    </div>
+    
+    <div class="qr-container">
+      <h3 style="margin-bottom:15px;">📱 Scan to Pay (UPI)</h3>
+      <div class="qr-code">
+        <!-- Replace with your actual UPI QR code image -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=YOUR_UPI_ID&pn=Brandorivk&am=AMOUNT" alt="UPI QR Code" style="width:100%; height:100%;">
+      </div>
+      <p style="margin-top:15px; color:#666; font-size:0.9rem;">
+        <strong>UPI ID:</strong> yourname@oksbi<br>
+        <strong>Or use UPI apps:</strong> GPay, PhonePe, Paytm
+      </p>
+    </div>
+    
+    <div class="timer" id="paymentTimer">⏰ Time Remaining: 03:00</div>
+    
+    <form onsubmit="submitUTR(event)">
+      <div class="form-group">
+        <label>UTR / Transaction ID *</label>
+        <input type="text" id="utrNumber" required placeholder="Enter 12-digit UTR number" pattern="[0-9]{12,16}" maxlength="16">
+        <p style="font-size:0.8rem; color:#666; margin-top:5px;">Find UTR in your payment app transaction details</p>
+      </div>
+      
+      <div class="form-group">
+        <label>Upload Payment Screenshot (Optional)</label>
+        <input type="file" id="paymentScreenshot" accept="image/*">
+      </div>
+      
+      <button type="submit" class="submit-btn">✅ Submit Payment Details</button>
+      <button type="button" class="cancel-btn" onclick="closePaymentModal()">Cancel</button>
+    </form>
+    
+    <div class="verification-status pending" id="verificationStatus">
+      ⏳ Payment Pending Verification
+    </div>
   </div>
 </div>
 
@@ -271,23 +355,38 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
   </div>
 </div>
 
-<!-- Admin Login Modal -->
-<div class="modal" id="adminLoginModal">
-  <div class="modal-box" style="max-width:400px;">
-    <button class="close-btn" onclick="closeAdminLogin()">×</button>
-    <h2>🔐 Admin Login</h2>
-    <form onsubmit="adminSignIn(event)">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="adminEmail" required placeholder="admin@brandorivk.com">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="adminPass" required placeholder="Enter password">
-      </div>
-      <button type="submit" class="submit-btn">Login</button>
-      <button type="button" class="cancel-btn" onclick="closeAdminLogin()">Cancel</button>
-    </form>
+<!-- Admin Modal -->
+<div class="modal" id="adminModal">
+  <div class="admin-panel">
+    <button class="close-btn" onclick="closeAdmin()">×</button>
+    <h2>👨‍💼 Admin Panel - Payment Verification</h2>
+    
+    <div class="admin-stats">
+      <div class="stat-card"><h3 id="statTotal">0</h3><p>Total Orders</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #f39c12, #e67e22);"><h3 id="statPending">0</h3><p>Pending Payment</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #3498db, #2980b9);"><h3 id="statApproved">0</h3><p>Payment Approved</p></div>
+      <div class="stat-card" style="background:linear-gradient(135deg, #27ae60, #229954);"><h3 id="statDelivered">0</h3><p>Delivered</p></div>
+    </div>
+    
+    <h3 style="margin:20px 0 15px;">⏳ Pending Payment Verifications</h3>
+    <div style="overflow-x:auto;">
+      <table class="orders-table">
+        <thead>
+          <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>UTR Number</th><th>Submitted</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="pendingPaymentsTable"></tbody>
+      </table>
+    </div>
+    
+    <h3 style="margin:30px 0 15px;">📋 All Orders</h3>
+    <div style="overflow-x:auto;">
+      <table class="orders-table">
+        <thead>
+          <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment Status</th><th>Order Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="allOrdersTable"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -295,7 +394,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 
 <script>
 // ============================================
-// 🔥 YOUR FIREBASE CONFIG
+// 🔥 FIREBASE CONFIG
 // ============================================
 const firebaseConfig = {
   apiKey: "AIzaSyBnYRf-mptGr3oA6ZqmJsjM9m6RCUz4mbM",
@@ -307,7 +406,6 @@ const firebaseConfig = {
   measurementId: "G-WM887NHXE9"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -325,7 +423,9 @@ const products = [
 ];
 
 const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
+const PAYMENT_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const ADMIN_EMAIL = "admin@brandorivk.com";
+const UPI_ID = "yourname@oksbi"; // ⚠️ REPLACE WITH YOUR UPI ID
 
 // ============================================
 // DATA STORAGE
@@ -334,6 +434,8 @@ let cart = [];
 let orders = [];
 let currentUser = null;
 let userData = null;
+let currentOrderForPayment = null;
+let paymentTimer = null;
 
 function loadData(){
   try {
@@ -353,32 +455,22 @@ function saveData(){
 loadData();
 
 // ============================================
-// 🔥 FIXED: AUTH STATE LISTENER (Runs on page load)
+// AUTH STATE LISTENER
 // ============================================
 auth.onAuthStateChanged(async (user) => {
-  console.log("🔐 Auth state changed:", user ? user.email : "Logged out");
-  
   if (user) {
-    // User is signed in
     currentUser = user;
-    
-    // Get user data from Firestore
     try {
       const doc = await db.collection('users').doc(user.uid).get();
       if (doc.exists) {
         userData = doc.data();
-        console.log("👤 User data loaded:", userData);
       }
     } catch (err) {
-      console.log("Could not load user data:", err);
+      console.log("Could not load user data");
       userData = { name: user.email.split('@')[0], email: user.email };
     }
-    
-    // Update UI immediately
     updateUserUI();
-    
   } else {
-    // User is signed out
     currentUser = null;
     userData = null;
     updateUserUI();
@@ -386,39 +478,33 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 // ============================================
-// UI UPDATE FUNCTION (FIXED - Updates header after login)
+// UI UPDATE
 // ============================================
 function updateUserUI(){
   const userAuthSection = document.getElementById("userAuthSection");
   const adminBtn = document.getElementById("adminBtn");
   
   if (currentUser && userData) {
-    // ✅ User is logged in - Show profile button
     const initials = (userData.name || currentUser.email).charAt(0).toUpperCase();
-    
     userAuthSection.innerHTML = `
       <button class="btn" onclick="showProfileModal()" style="display:flex;align-items:center;gap:8px;">
         <div class="user-avatar">${initials}</div>
         <span>${userData.name || currentUser.email.split('@')[0]}</span>
       </button>
     `;
-    
-    // Show admin button if admin email
     if (currentUser.email === ADMIN_EMAIL) {
       adminBtn.style.display = 'block';
     } else {
       adminBtn.style.display = 'none';
     }
-    
   } else {
-    // ❌ User is logged out - Show Sign In button
     userAuthSection.innerHTML = '<button class="btn" onclick="showAuthModal()">👤 Sign In</button>';
     adminBtn.style.display = 'none';
   }
 }
 
 // ============================================
-// AUTH MODAL FUNCTIONS
+// AUTH FUNCTIONS
 // ============================================
 function showAuthModal(){
   document.getElementById("authModal").classList.add("open");
@@ -450,9 +536,6 @@ function switchAuthTab(tab){
   }
 }
 
-// ============================================
-// 🔥 FIXED: USER SIGN UP (With better error handling)
-// ============================================
 function userSignUp(e){
   e.preventDefault();
   
@@ -461,7 +544,6 @@ function userSignUp(e){
   const phone = document.getElementById("signupPhone").value.trim();
   const password = document.getElementById("signupPassword").value;
   
-  // Validate
   if (password.length < 6) {
     showToast("Password must be at least 6 characters", "error");
     return;
@@ -470,8 +552,6 @@ function userSignUp(e){
   auth.createUserWithEmailAndPassword(email, password)
     .then((userCredential) => {
       const user = userCredential.user;
-      
-      // Save user data to Firestore
       return db.collection('users').doc(user.uid).set({
         name: name,
         email: email,
@@ -481,79 +561,52 @@ function userSignUp(e){
       });
     })
     .then(() => {
-      showToast("Account created! Welcome, " + name + " 🎉");
+      showToast("✅ Successfully Registered! Welcome, " + name + " 🎉", "success");
       closeAuthModal();
-      // Auth state listener will auto-update UI
     })
     .catch((error) => {
-      console.error("Sign up error:", error);
       let msg = "Sign up failed";
       if(error.code === 'auth/email-already-in-use') msg = "Email already registered!";
       else if(error.code === 'auth/weak-password') msg = "Password too weak (min 6 chars)";
       else if(error.code === 'auth/invalid-email') msg = "Invalid email format";
-      else if(error.code === 'auth/network-request-failed') msg = "Check your internet connection";
       showToast(msg, "error");
     });
 }
 
-// ============================================
-// 🔥 FIXED: USER SIGN IN (With better error handling)
-// ============================================
 function userSignIn(e){
   e.preventDefault();
-  
   const email = document.getElementById("signinEmail").value.trim().toLowerCase();
   const password = document.getElementById("signinPassword").value;
   
   auth.signInWithEmailAndPassword(email, password)
     .then(() => {
-      // ✅ Sign in successful - Auth listener will auto-update UI
-      showToast("Welcome back! 👋");
+      showToast("Welcome back! 👋", "success");
       closeAuthModal();
-      // No need to call updateUserUI() - onAuthStateChanged handles it
     })
     .catch((error) => {
-      console.error("Sign in error:", error);
       let msg = "Sign in failed";
-      if(error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        msg = "Invalid email or password";
-      } else if(error.code === 'auth/invalid-email') {
-        msg = "Invalid email format";
-      } else if(error.code === 'auth/network-request-failed') {
-        msg = "Check your internet connection";
-      }
+      if(error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = "Invalid email or password";
+      else if(error.code === 'auth/network-request-failed') msg = "Check your internet connection";
       showToast(msg, "error");
     });
 }
 
-// ============================================
-// USER SIGN OUT
-// ============================================
 function userSignOut(){
   auth.signOut().then(() => {
     showToast("Logged out successfully");
     closeProfileModal();
-    // Auth listener will auto-update UI to show "Sign In" button
   });
 }
 
-// ============================================
-// PROFILE MODAL (Shows user details after login)
-// ============================================
 function showProfileModal(){
-  if (!currentUser || !userData) {
-    showAuthModal();
-    return;
-  }
+  if (!currentUser || !userData) { showAuthModal(); return; }
   
-  // Fill profile data
   const initials = (userData.name || currentUser.email).charAt(0).toUpperCase();
   document.getElementById("profileAvatar").textContent = initials;
   document.getElementById("profileName").textContent = userData.name || "User";
   document.getElementById("profileEmail").textContent = userData.email || currentUser.email;
   document.getElementById("profilePhone").textContent = userData.phone || "-";
   
-  // Format join date
   if (userData.createdAt && userData.createdAt.toDate) {
     document.getElementById("profileJoined").textContent = userData.createdAt.toDate().toLocaleDateString('en-IN');
   } else {
@@ -563,8 +616,168 @@ function showProfileModal(){
   document.getElementById("profileModal").classList.add("open");
 }
 
-function closeProfileModal(){
-  document.getElementById("profileModal").classList.remove("open");
+function closeProfileModal(){ document.getElementById("profileModal").classList.remove("open"); }
+
+// ============================================
+// PAYMENT FUNCTIONS
+// ============================================
+function showPaymentModal(order){
+  currentOrderForPayment = order;
+  
+  document.getElementById("paymentOrderId").textContent = order.orderId;
+  document.getElementById("paymentAmount").textContent = formatCurrency(order.total);
+  document.getElementById("utrNumber").value = "";
+  document.getElementById("paymentScreenshot").value = "";
+  
+  // Update QR code with actual amount
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${UPI_ID}&pn=Brandorivk&am=${order.total}&cu=INR`;
+  document.querySelector(".qr-code img").src = qrUrl;
+  
+  // Show payment status
+  updateVerificationStatus(order.paymentStatus || PAYMENT_STATUS.PENDING);
+  
+  document.getElementById("paymentModal").classList.add("open");
+  
+  // Start 3-minute timer
+  startPaymentTimer(3 * 60); // 3 minutes in seconds
+}
+
+function closePaymentModal(){
+  document.getElementById("paymentModal").classList.remove("open");
+  if (paymentTimer) {
+    clearInterval(paymentTimer);
+    paymentTimer = null;
+  }
+  currentOrderForPayment = null;
+}
+
+function startPaymentTimer(seconds){
+  if (paymentTimer) clearInterval(paymentTimer);
+  
+  let remaining = seconds;
+  const timerEl = document.getElementById("paymentTimer");
+  
+  paymentTimer = setInterval(() => {
+    remaining--;
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    timerEl.textContent = `⏰ Time Remaining: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    
+    if (remaining <= 0) {
+      clearInterval(paymentTimer);
+      timerEl.textContent = "⏰ Time Expired! Please place order again.";
+      timerEl.style.color = "#e74c3c";
+      showToast("Payment time expired! Please place order again.", "error");
+    } else if (remaining <= 60) {
+      timerEl.style.color = "#e74c3c";
+    }
+  }, 1000);
+}
+
+function updateVerificationStatus(status){
+  const statusEl = document.getElementById("verificationStatus");
+  
+  if (status === PAYMENT_STATUS.PENDING) {
+    statusEl.className = "verification-status pending";
+    statusEl.textContent = "⏳ Payment Pending Verification";
+  } else if (status === PAYMENT_STATUS.APPROVED) {
+    statusEl.className = "verification-status approved";
+    statusEl.textContent = "✅ Payment Approved Successfully!";
+  } else if (status === PAYMENT_STATUS.REJECTED) {
+    statusEl.className = "verification-status rejected";
+    statusEl.textContent = "❌ Payment Rejected. Please contact support.";
+  }
+}
+
+function submitUTR(e){
+  e.preventDefault();
+  
+  if (!currentOrderForPayment) {
+    showToast("No active order", "error");
+    return;
+  }
+  
+  const utr = document.getElementById("utrNumber").value.trim();
+  const screenshot = document.getElementById("paymentScreenshot").files[0];
+  
+  if (utr.length < 12) {
+    showToast("UTR must be at least 12 digits", "error");
+    return;
+  }
+  
+  // Update order with UTR
+  const orderIndex = orders.findIndex(o => o.orderId === currentOrderForPayment.orderId);
+  if (orderIndex !== -1) {
+    orders[orderIndex].utr = utr;
+    orders[orderIndex].paymentStatus = PAYMENT_STATUS.PENDING;
+    orders[orderIndex].paymentSubmittedAt = new Date().toISOString();
+    
+    if (screenshot) {
+      // In production, upload to Firebase Storage
+      orders[orderIndex].screenshotName = screenshot.name;
+    }
+    
+    saveData();
+    
+    // Save to Firestore
+    if (currentUser) {
+      db.collection('orders').doc(currentOrderForPayment.orderId).update({
+        utr: utr,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+        paymentSubmittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => console.log("Firestore update error:", err));
+    }
+    
+    showToast("UTR submitted! Waiting for admin approval", "success");
+    updateVerificationStatus(PAYMENT_STATUS.PENDING);
+    
+    // In real app, send notification to admin
+    setTimeout(() => {
+      closePaymentModal();
+      showOrders();
+    }, 2000);
+  }
+}
+
+// ============================================
+// ADMIN PAYMENT VERIFICATION
+// ============================================
+function approvePayment(orderId){
+  const orderIndex = orders.findIndex(o => o.orderId === orderId);
+  if (orderIndex !== -1) {
+    orders[orderIndex].paymentStatus = PAYMENT_STATUS.APPROVED;
+    orders[orderIndex].paymentApprovedAt = new Date().toISOString();
+    orders[orderIndex].status = ORDER_STATUS.CONFIRMED;
+    saveData();
+    
+    if (currentUser) {
+      db.collection('orders').doc(orderId).update({
+        paymentStatus: PAYMENT_STATUS.APPROVED,
+        status: ORDER_STATUS.CONFIRMED,
+        paymentApprovedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    showToast("Payment approved! Order confirmed.", "success");
+    showAdmin();
+  }
+}
+
+function rejectPayment(orderId){
+  const orderIndex = orders.findIndex(o => o.orderId === orderId);
+  if (orderIndex !== -1) {
+    orders[orderIndex].paymentStatus = PAYMENT_STATUS.REJECTED;
+    saveData();
+    
+    if (currentUser) {
+      db.collection('orders').doc(orderId).update({
+        paymentStatus: PAYMENT_STATUS.REJECTED
+      });
+    }
+    
+    showToast("Payment rejected", "error");
+    showAdmin();
+  }
 }
 
 // ============================================
@@ -592,46 +805,68 @@ function checkUserAndCheckout(){
 
 function checkAdmin(){
   if(currentUser && currentUser.email === ADMIN_EMAIL){
-    showAdminPanel();
+    showAdmin();
   } else {
-    document.getElementById("adminLoginModal").classList.add("open");
+    document.getElementById("adminModal").classList.add("open");
   }
 }
 
-function closeAdminLogin(){
-  document.getElementById("adminLoginModal").classList.remove("open");
-  document.getElementById("adminEmail").value = "";
-  document.getElementById("adminPass").value = "";
-}
+function closeAdmin(){ document.getElementById("adminModal").classList.remove("open"); }
 
-function adminSignIn(e){
-  e.preventDefault();
-  const email = document.getElementById("adminEmail").value;
-  const pass = document.getElementById("adminPass").value;
-  
-  if(email !== ADMIN_EMAIL){
-    showToast("Not an admin account!", "error");
-    return;
-  }
-  
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(() => {
-      showToast("Admin login successful! 🔓");
-      closeAdminLogin();
-      showAdminPanel();
-    })
-    .catch((error) => {
-      showToast("Login failed: " + error.message, "error");
-    });
-}
-
-function showAdminPanel(){
+function showAdmin(){
   if(!currentUser || currentUser.email !== ADMIN_EMAIL){ checkAdmin(); return; }
+  
   const total = orders.length;
-  const pending = orders.filter(o => o.status === ORDER_STATUS.CONFIRMED).length;
-  const dispatched = orders.filter(o => o.status === ORDER_STATUS.DISPATCHED).length;
+  const pending = orders.filter(o => o.paymentStatus === PAYMENT_STATUS.PENDING).length;
+  const approved = orders.filter(o => o.paymentStatus === PAYMENT_STATUS.APPROVED).length;
   const delivered = orders.filter(o => o.status === ORDER_STATUS.DELIVERED).length;
-  alert(`📊 Admin Stats:\n\nTotal Orders: ${total}\nPending: ${pending}\nDispatched: ${dispatched}\nDelivered: ${delivered}`);
+  
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statPending").textContent = pending;
+  document.getElementById("statApproved").textContent = approved;
+  document.getElementById("statDelivered").textContent = delivered;
+  
+  // Pending payments table
+  const pendingOrders = orders.filter(o => o.paymentStatus === PAYMENT_STATUS.PENDING);
+  document.getElementById("pendingPaymentsTable").innerHTML = pendingOrders.length === 0 ?
+    '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">No pending payments</td></tr>' :
+    pendingOrders.map(order => `
+      <tr>
+        <td><strong>${order.orderId}</strong></td>
+        <td>${order.customer.name}<br><small>${order.customer.phone}</small></td>
+        <td>${formatCurrency(order.total)}</td>
+        <td><strong>${order.utr || 'Not submitted'}</strong></td>
+        <td>${order.paymentSubmittedAt ? new Date(order.paymentSubmittedAt).toLocaleString() : '-'}</td>
+        <td>
+          <button onclick="approvePayment('${order.orderId}')" class="action-btn btn-approve">✅ Approve</button>
+          <button onclick="rejectPayment('${order.orderId}')" class="action-btn btn-reject">❌ Reject</button>
+        </td>
+      </tr>
+    `).join('');
+  
+  // All orders table
+  document.getElementById("allOrdersTable").innerHTML = orders.length === 0 ?
+    '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">No orders yet</td></tr>' :
+    orders.map(order => {
+      const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Pending", [PAYMENT_STATUS.APPROVED]: "✅ Approved", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
+      const paymentClasses = { [PAYMENT_STATUS.PENDING]: "status-payment-pending", [PAYMENT_STATUS.APPROVED]: "status-payment-approved", [PAYMENT_STATUS.REJECTED]: "status-payment-pending" };
+      const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
+      
+      return `
+        <tr>
+          <td><strong>${order.orderId}</strong></td>
+          <td>${order.customer.name}</td>
+          <td>${formatCurrency(order.total)}</td>
+          <td><span class="order-status ${paymentClasses[order.paymentStatus] || 'status-confirmed'}">${paymentLabels[order.paymentStatus] || 'Pending'}</span></td>
+          <td><span class="order-status status-${order.status}">${orderLabels[order.status] || 'Confirmed'}</span></td>
+          <td>
+            <button onclick="alert('Order: ${order.orderId}\\nUTR: ${order.utr || 'Not submitted'}\\nStatus: ${order.paymentStatus}')" class="action-btn btn-view">View</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  
+  document.getElementById("adminModal").classList.add("open");
 }
 
 // ============================================
@@ -705,7 +940,6 @@ function openCheckoutForm(){
       <span>${formatCurrency(item.price * item.qty)}</span>
     </div>`).join('');
   
-  // Pre-fill user info if logged in
   if(currentUser && userData){
     document.getElementById("custName").value = userData.name || "";
     document.getElementById("custEmail").value = userData.email || "";
@@ -737,22 +971,29 @@ function placeOrder(e){
     items: [...cart],
     total: cart.reduce((sum, i) => sum + i.price * i.qty, 0),
     status: ORDER_STATUS.CONFIRMED,
-    statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order confirmed" }]
+    paymentStatus: PAYMENT_STATUS.PENDING,
+    utr: null,
+    statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order placed, awaiting payment" }]
   };
   
-  orders.unshift(order); saveData();
+  orders.unshift(order);
+  saveData();
   
-  // Save to Firestore
   if(currentUser){
     db.collection('orders').add(order).catch(err => console.log("Firestore save error:", err));
   }
   
-  cart = []; updateCart();
-  showToast("Order placed successfully! 🎉");
-  closeCheckoutForm(); cartModal.classList.remove("open");
+  cart = [];
+  updateCart();
+  closeCheckoutForm();
+  cartModal.classList.remove("open");
   document.getElementById("orderForm").reset();
   
-  setTimeout(() => { alert(`✅ Order Confirmed!\n\nOrder ID: ${order.orderId}\nTotal: ${formatCurrency(order.total)}`); }, 500);
+  // Show payment modal
+  setTimeout(() => {
+    showToast("Order placed! Complete payment", "success");
+    showPaymentModal(order);
+  }, 500);
 }
 
 function updateOrderStatus(orderId, newStatus){
@@ -761,7 +1002,10 @@ function updateOrderStatus(orderId, newStatus){
   order.status = newStatus;
   const messages = { confirmed: "Order confirmed", dispatched: "Order dispatched", transit: "In transit", delivered: "Delivered" };
   order.statusHistory.push({ status: newStatus, date: new Date().toLocaleString('en-IN'), message: messages[newStatus] });
-  saveData(); showToast("Status updated!"); showOrders();
+  saveData();
+  showToast("Status updated!");
+  showOrders();
+  showAdmin();
 }
 
 function showOrders(){
@@ -771,12 +1015,17 @@ function showOrders(){
     document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>${currentUser ? "You haven't placed any orders." : "Please sign in."}</p></div>`;
   } else {
     document.getElementById("ordersList").innerHTML = userOrders.map(order => {
-      const labels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
-      const classes = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
+      const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
+      const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
+      const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
+      
       return `<div class="order-card">
         <div class="order-header">
           <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
-          <span class="order-status ${classes[order.status]}">${labels[order.status]}</span>
+          <div>
+            <span class="order-status ${orderClasses[order.status]}">${orderLabels[order.status]}</span>
+            <span class="order-status ${order.paymentStatus === PAYMENT_STATUS.APPROVED ? 'status-payment-approved' : 'status-payment-pending'}" style="margin-left:5px;">${paymentLabels[order.paymentStatus]}</span>
+          </div>
         </div>
         <div class="order-items">
           ${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}
@@ -787,7 +1036,9 @@ function showOrders(){
           <div><strong>📞</strong> ${order.customer.phone}</div>
           <div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div>
         </div>
+        ${order.utr ? `<div class="payment-info"><p><strong>💳 UTR:</strong> ${order.utr}</p><p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? new Date(order.paymentSubmittedAt).toLocaleString() : '-'}</p></div>` : ''}
         <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
+        ${order.paymentStatus === PAYMENT_STATUS.PENDING && !order.utr ? `<button onclick="showPaymentModal(orders.find(o => o.orderId === '${order.orderId}'))" class="btn" style="width:100%;margin-top:15px;background:var(--warning);color:white;">💳 Complete Payment</button>` : ''}
       </div>`;
     }).join('');
   }
@@ -798,8 +1049,10 @@ function closeOrders(){ ordersModal.classList.remove("open"); }
 
 function showToast(msg, type = "success"){
   const t = document.getElementById("toast");
-  t.textContent = msg; t.className = "toast" + (type === "error" ? " error" : "");
-  t.style.display = "block"; setTimeout(() => t.style.display = "none", 2500);
+  t.textContent = msg;
+  t.className = "toast" + (type === "error" ? " error" : type === "warning" ? " warning" : "");
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 3000);
 }
 
 // Event Listeners
@@ -809,17 +1062,17 @@ cartModal.onclick = e => { if(e.target === cartModal) cartModal.classList.remove
 checkoutModal.onclick = e => { if(e.target === checkoutModal) closeCheckoutForm(); };
 ordersModal.onclick = e => { if(e.target === ordersModal) closeOrders(); };
 document.getElementById("authModal").onclick = e => { if(e.target === document.getElementById("authModal")) closeAuthModal(); };
-document.getElementById("adminLoginModal").onclick = e => { if(e.target === document.getElementById("adminLoginModal")) closeAdminLogin(); };
 document.getElementById("profileModal").onclick = e => { if(e.target === document.getElementById("profileModal")) closeProfileModal(); };
-document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeAdminLogin(); closeProfileModal(); } });
+document.getElementById("paymentModal").onclick = e => { if(e.target === document.getElementById("paymentModal")) closePaymentModal(); };
+document.getElementById("adminModal").onclick = e => { if(e.target === document.getElementById("adminModal")) closeAdmin(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); closeAdmin(); } });
 
 // Initialize
 document.addEventListener("DOMContentLoaded", function(){
-  console.log("🚀 Brandorivk loaded with Firebase!");
-  renderProducts(); 
-  loadData(); 
+  console.log("🚀 Brandorivk loaded with Firebase + UPI Payment!");
+  renderProducts();
+  loadData();
   updateCart();
-  // Auth listener will handle UI updates
 });
 </script>
 
