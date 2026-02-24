@@ -23,8 +23,9 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .hero h1{ margin-bottom:10px; font-size:2rem; }
 .wrap{ max-width:1100px; margin:40px auto; padding:0 5%; }
 .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:25px; }
-.card{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; }
-.card img{ width:100%; height:280px; object-fit:cover; display:block; background:#f0f0f0; cursor:pointer; }
+.card{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; cursor:pointer; transition:transform .2s; }
+.card:hover{ transform:translateY(-5px); }
+.card img{ width:100%; height:280px; object-fit:cover; display:block; background:#f0f0f0; }
 .info{ padding:18px; }
 .price{ font-weight:bold; color:var(--primary); font-size:1.2rem; margin:10px 0; }
 .add{ width:100%; padding:12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; }
@@ -103,6 +104,22 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .verification-status.pending{ background:#ffeaa7; color:#d63031; }
 .verification-status.approved{ background:#55efc4; color:#00b894; }
 .verification-status.rejected{ background:#fab1a0; color:#d63031; }
+
+/* Product Detail View Styles */
+#productDetailView{ display:none; padding:20px 5%; max-width:1000px; margin:0 auto; }
+#productDetailView.active{ display:block; }
+#productGrid.hidden{ display:none; }
+.back-btn{ display:inline-flex; align-items:center; gap:5px; padding:8px 16px; background:#fff; border:1px solid var(--line); border-radius:20px; cursor:pointer; margin-bottom:20px; font-weight:600; }
+.back-btn:hover{ background:#f8f9fa; }
+.product-detail{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:0; }
+@media(max-width:768px){ .product-detail{ grid-template-columns:1fr; } }
+.product-detail img{ width:100%; height:400px; object-fit:cover; background:#f0f0f0; }
+.detail-info{ padding:30px; }
+.detail-info h2{ margin-bottom:10px; font-size:1.5rem; }
+.detail-info .price{ font-size:1.5rem; margin:10px 0 20px; display:block; }
+.detail-info p{ color:#666; line-height:1.6; margin-bottom:20px; }
+.detail-info .add{ font-size:1.1rem; padding:12px; }
+
 @media(max-width:768px){ .header-btns{ flex-direction:column; gap:5px; } .form-row{ grid-template-columns:1fr; } .customer-info{ grid-template-columns:1fr; } .hero h1{ font-size:1.5rem; } .grid{ grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); } }
 </style>
 </head>
@@ -125,8 +142,15 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 </section>
 
 <main class="wrap">
+  <!-- Product Grid View -->
   <div id="productGrid">
     <div class="grid" id="grid"></div>
+  </div>
+  
+  <!-- Product Detail View -->
+  <div id="productDetailView">
+    <button class="back-btn" onclick="goHome()">← Back to Shop</button>
+    <div class="product-detail" id="productDetail"></div>
   </div>
 </main>
 
@@ -329,15 +353,52 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================
-// CONFIG
+// CONFIG - WITH RELIABLE IMAGES
 // ============================================
 const products = [
-  { id: 1, name: "Premium Tee", price: 799, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "100% premium cotton" },
-  { id: 2, name: "Urban Shirt", price: 1299, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Premium print design" },
-  { id: 3, name: "Street Pants", price: 1599, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Stretch fabric comfort" },
-  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Cozy fleece interior" },
-  { id: 5, name: "Denim Jacket", price: 2499, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Classic cut denim" },
-  { id: 6, name: "Cargo Shorts", price: 999, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Multiple pockets" }
+  { 
+    id: 1, 
+    name: "Premium Tee", 
+    price: 799, 
+    // ✅ Using reliable placeholder images that ALWAYS work
+    image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Premium+Tee",
+    description: "100% premium cotton, breathable fit. Perfect for everyday wear." 
+  },
+  { 
+    id: 2, 
+    name: "Urban Shirt", 
+    price: 1299, 
+    image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Urban+Shirt",
+    description: "Premium print, fade-resistant design. Stylish button-down." 
+  },
+  { 
+    id: 3, 
+    name: "Street Pants", 
+    price: 1599, 
+    image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Street+Pants",
+    description: "Stretch fabric, all-day comfort. Modern tapered fit." 
+  },
+  { 
+    id: 4, 
+    name: "Classic Hoodie", 
+    price: 1999, 
+    image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Classic+Hoodie",
+    description: "Cozy fleece interior, perfect for layering." 
+  },
+  { 
+    id: 5, 
+    name: "Denim Jacket", 
+    price: 2499, 
+    image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Denim+Jacket",
+    description: "Classic cut, durable premium denim." 
+  },
+  { 
+    id: 6, 
+    name: "Cargo Shorts", 
+    price: 999, 
+    image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Cargo+Shorts",
+    description: "Multiple pockets, summer ready." 
+  }
 ];
 
 const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
@@ -533,6 +594,47 @@ function submitUTR(e){
 }
 
 // ============================================
+// PRODUCT DETAIL VIEW - FIXED
+// ============================================
+function showProduct(productId){
+  console.log("🔍 Showing product:", productId);
+  const product = products.find(p => p.id === productId);
+  if(!product) {
+    console.error("❌ Product not found:", productId);
+    return;
+  }
+  
+  // Hide grid, show detail view
+  document.getElementById("productGrid").classList.add("hidden");
+  document.getElementById("productDetailView").classList.add("active");
+  
+  // Render product detail
+  const detailEl = document.getElementById("productDetail");
+  detailEl.innerHTML = `
+    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
+         onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/6956ff/ffffff?text=${encodeURIComponent(product.name)}'; console.log('Image fallback for:', '${product.name}');">
+    <div class="detail-info">
+      <h2>${product.name}</h2>
+      <span class="price">${formatCurrency(product.price)}</span>
+      <p>${product.description}</p>
+      <p style="color:#666;font-size:0.9rem;margin-bottom:20px;"><strong>Stock:</strong> <span style="color:#27ae60;">✅ In Stock</span></p>
+      <button class="add" onclick="addToCart(${product.id}); event.stopPropagation();">Add to Cart - ${formatCurrency(product.price)}</button>
+    </div>
+  `;
+  
+  // Scroll to top
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  console.log("✅ Product detail shown");
+}
+
+function goHome(){
+  console.log("🏠 Going home");
+  document.getElementById("productDetailView").classList.remove("active");
+  document.getElementById("productGrid").classList.remove("hidden");
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ============================================
 // ORDERS & CART
 // ============================================
 function checkUserAndShowOrders(){ if(!currentUser){ showToast("Please sign in to view orders", "error"); showAuthModal(); } else { showOrders(); } }
@@ -547,13 +649,29 @@ const cartItems = document.getElementById("cartItems");
 const totalEl = document.getElementById("total");
 
 function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('en-IN'); }
-function cleanWordPressUrl(url){ return url.trim().split('?')[0].split('#')[0]; }
 
 function renderProducts(){
+  console.log("🎨 Rendering products...");
   grid.innerHTML = products.map(p => {
-    const cleanImage = cleanWordPressUrl(p.image);
-    return `<div class="card"><img src="${cleanImage}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/6956ff/ffffff?text=${encodeURIComponent(p.name)}';"><div class="info"><h3>${p.name}</h3><p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p><div class="price">${formatCurrency(p.price)}</div><button class="add" onclick="addToCart(${p.id}); event.stopPropagation();">Add to Cart</button></div></div>`;
+    // Use reliable placeholder images
+    const imageUrl = p.image;
+    
+    return `
+    <div class="card" onclick="showProduct(${p.id})">
+      <img src="${imageUrl}" 
+           alt="${p.name}" 
+           referrerpolicy="no-referrer" 
+           crossorigin="anonymous"
+           onerror="console.log('Image error for:', '${p.name}'); this.onerror=null; this.src='https://via.placeholder.com/500x500/6956ff/ffffff?text=${encodeURIComponent(p.name)}';">
+      <div class="info">
+        <h3>${p.name}</h3>
+        <p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p>
+        <div class="price">${formatCurrency(p.price)}</div>
+        <button class="add" onclick="addToCart(${p.id}); event.stopPropagation();">Add to Cart</button>
+      </div>
+    </div>`;
   }).join('');
+  console.log("✅ Products rendered:", products.length);
 }
 
 function addToCart(id){
@@ -621,10 +739,8 @@ function placeOrder(e){
   }
 }
 
-// ✅ FIXED: SHOW ORDERS - NO INDEX REQUIRED (Client-side filtering)
 function showOrders(){
   console.log("📦 Loading orders...");
-  
   if(!currentUser){ 
     document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`; 
     ordersModal.classList.add("open"); 
@@ -634,18 +750,12 @@ function showOrders(){
   document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
   ordersModal.classList.add("open");
   
-  // Load ALL orders ordered by date, then filter client-side (NO INDEX NEEDED!)
   db.collection('orders')
-    .orderBy('orderDate', 'desc')  // Only orderBy, no where() = no composite index needed
+    .orderBy('orderDate', 'desc')
     .get()
     .then((snapshot) => {
       console.log("📦 Orders loaded from Firestore:", snapshot.size);
-      
-      // Filter to current user's orders in JavaScript
-      const userOrders = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(order => order.userId === currentUser.uid);
-      
+      const userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(order => order.userId === currentUser.uid);
       console.log("👤 User orders:", userOrders.length);
       
       if(userOrders.length === 0){ 
@@ -655,21 +765,12 @@ function showOrders(){
       
       const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
       const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
-      const paymentLabels = { 
-        [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", 
-        [PAYMENT_STATUS.APPROVED]: "✅ Paid & Approved", 
-        [PAYMENT_STATUS.REJECTED]: "❌ Rejected" 
-      };
-      const paymentClasses = { 
-        [PAYMENT_STATUS.PENDING]: "status-payment-pending", 
-        [PAYMENT_STATUS.APPROVED]: "status-payment-approved", 
-        [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" 
-      };
+      const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid & Approved", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
+      const paymentClasses = { [PAYMENT_STATUS.PENDING]: "status-payment-pending", [PAYMENT_STATUS.APPROVED]: "status-payment-approved", [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" };
       
       document.getElementById("ordersList").innerHTML = userOrders.map(order => {
         const paymentStatus = order.paymentStatus || PAYMENT_STATUS.PENDING;
         const orderStatus = order.status || ORDER_STATUS.CONFIRMED;
-        
         return `<div class="order-card">
           <div class="order-header">
             <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
@@ -678,9 +779,7 @@ function showOrders(){
               <span class="order-status ${paymentClasses[paymentStatus]}" style="margin-top:5px;display:inline-block;">${paymentLabels[paymentStatus]}</span>
             </div>
           </div>
-          <div class="order-items">
-            ${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}
-          </div>
+          <div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}</div>
           <div class="customer-info">
             <div><strong>👤</strong> ${order.customer.name}</div>
             <div><strong>📧</strong> ${order.customer.email}</div>
@@ -700,7 +799,6 @@ function showOrders(){
           <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
         </div>`;
       }).join('');
-      
       console.log("✅ Orders displayed successfully");
     })
     .catch((err) => {
@@ -728,8 +826,10 @@ document.getElementById("profileModal").onclick = e => { if(e.target === documen
 document.getElementById("paymentModal").onclick = e => { if(e.target === document.getElementById("paymentModal")) closePaymentModal(); };
 document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); } });
 
+// Initialize
 document.addEventListener("DOMContentLoaded", function(){ 
   console.log("🚀 Brandorivk loaded!"); 
+  console.log("🔥 Firebase Project:", firebaseConfig.projectId);
   renderProducts(); 
   loadData(); 
   updateCart(); 
