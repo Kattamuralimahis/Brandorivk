@@ -332,7 +332,7 @@ const db = firebase.firestore();
 // CONFIG
 // ============================================
 const products = [
-  { id: 1, name: "Premium Tee", price: 1, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "100% premium cotton" },
+  { id: 1, name: "Premium Tee", price: 799, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "100% premium cotton" },
   { id: 2, name: "Urban Shirt", price: 1299, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Premium print design" },
   { id: 3, name: "Street Pants", price: 1599, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Stretch fabric comfort" },
   { id: 4, name: "Classic Hoodie", price: 1999, image: "https://murali56.wordpress.com/wp-content/uploads/2026/02/whatsapp-image-2026-02-18-at-19.11.49-1.jpeg", description: "Cozy fleece interior" },
@@ -460,7 +460,7 @@ function showProfileModal(){
 function closeProfileModal(){ document.getElementById("profileModal").classList.remove("open"); }
 
 // ============================================
-// PAYMENT - FIXED UTR SUBMISSION
+// PAYMENT
 // ============================================
 function showPaymentModal(order){
   currentOrderForPayment = order;
@@ -502,29 +502,15 @@ function updateVerificationStatus(status){
   else if (status === PAYMENT_STATUS.REJECTED) { statusEl.className = "verification-status rejected"; statusEl.textContent = "❌ Payment Rejected. Please contact support."; }
 }
 
-// ✅ FIXED: UTR SUBMISSION
 function submitUTR(e){
   e.preventDefault();
-  
   console.log("💳 Submitting UTR...");
-  
-  if (!currentOrderForPayment) { 
-    showToast("No active order", "error"); 
-    return; 
-  }
-  
+  if (!currentOrderForPayment) { showToast("No active order", "error"); return; }
   const utr = document.getElementById("utrNumber").value.trim();
-  
-  if (utr.length < 12) { 
-    showToast("UTR must be at least 12 digits", "error"); 
-    return; 
-  }
-  
+  if (utr.length < 12) { showToast("UTR must be at least 12 digits", "error"); return; }
   console.log("📝 UTR:", utr);
-  console.log("📦 Order ID:", currentOrderForPayment.orderId);
   console.log("🔍 Firestore ID:", currentOrderForPayment.firestoreId);
   
-  // Update Firestore
   if(currentOrderForPayment.firestoreId){
     db.collection('orders').doc(currentOrderForPayment.firestoreId).update({
       utr: utr,
@@ -535,17 +521,6 @@ function submitUTR(e){
       console.log("✅ UTR saved to Firestore!");
       showToast("UTR submitted! Admin will verify soon", "success");
       updateVerificationStatus(PAYMENT_STATUS.PENDING);
-      
-      // Also update localStorage
-      let localOrders = JSON.parse(localStorage.getItem("brandorivk_orders")) || [];
-      const orderIndex = localOrders.findIndex(o => o.orderId === currentOrderForPayment.orderId);
-      if(orderIndex !== -1){
-        localOrders[orderIndex].utr = utr;
-        localOrders[orderIndex].paymentStatus = PAYMENT_STATUS.PENDING;
-        localOrders[orderIndex].paymentSubmittedAt = new Date().toISOString();
-        localStorage.setItem("brandorivk_orders", JSON.stringify(localOrders));
-      }
-      
       setTimeout(() => { closePaymentModal(); showOrders(); }, 2000);
     })
     .catch((err) => {
@@ -553,8 +528,7 @@ function submitUTR(e){
       showToast("Error submitting UTR: " + err.message, "error");
     });
   } else {
-    // Fallback: Update localStorage only
-    showToast("Order not found in database. Please contact support.", "error");
+    showToast("Order not found in database.", "error");
   }
 }
 
@@ -635,74 +609,100 @@ function placeOrder(e){
   
   console.log("📦 Order created:", order);
   
-  try {
-    let localOrders = JSON.parse(localStorage.getItem("brandorivk_orders")) || [];
-    localOrders.unshift(order);
-    localStorage.setItem("brandorivk_orders", JSON.stringify(localOrders));
-    console.log("✅ Order saved to localStorage");
-  } catch(err) { console.error("❌ localStorage save failed:", err); }
-  
   if(currentUser){
     db.collection('orders').add(order)
       .then((docRef) => { 
         console.log("✅ Order saved to Firestore with ID:", docRef.id); 
         order.firestoreId = docRef.id;
+        cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
+        setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
       })
-      .catch((err) => { console.error("❌ Firestore save failed:", err.message); });
+      .catch((err) => { console.error("❌ Firestore save failed:", err.message); showToast("Error placing order", "error"); });
   }
-  
-  cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
-  setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
 }
 
-// ✅ FIXED: SHOW ORDERS WITH PAYMENT STATUS
+// ✅ FIXED: SHOW ORDERS - LOADS FROM FIRESTORE WITH REAL-TIME UPDATES
 function showOrders(){
+  console.log("📦 Loading orders...");
+  
   if(!currentUser){ 
     document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`; 
     ordersModal.classList.add("open"); 
     return; 
   }
   
-  // Load from Firestore (real-time)
-  db.collection('orders').where('userId', '==', currentUser.uid).orderBy('orderDate', 'desc').get()
+  document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
+  ordersModal.classList.add("open");
+  
+  // Load from Firestore (real-time, includes admin updates)
+  db.collection('orders')
+    .where('userId', '==', currentUser.uid)
+    .orderBy('orderDate', 'desc')
+    .get()
     .then((snapshot) => {
+      console.log("📦 Orders loaded from Firestore:", snapshot.size);
+      
       if(snapshot.empty){ 
         document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`; 
-      } else {
-        document.getElementById("ordersList").innerHTML = snapshot.docs.map(doc => {
-          const order = doc.data();
-          order.firestoreId = doc.id;
-          
-          const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
-          const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
-          const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
-          const paymentClasses = { [PAYMENT_STATUS.PENDING]: "status-payment-pending", [PAYMENT_STATUS.APPROVED]: "status-payment-approved", [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" };
-          
-          return `<div class="order-card">
-            <div class="order-header">
-              <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
-              <div>
-                <span class="order-status ${orderClasses[order.status]}">${orderLabels[order.status]}</span>
-                <span class="order-status ${paymentClasses[order.paymentStatus]}" style="margin-left:5px;">${paymentLabels[order.paymentStatus]}</span>
-              </div>
-            </div>
-            <div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}</div>
-            <div class="customer-info">
-              <div><strong>👤</strong> ${order.customer.name}</div>
-              <div><strong>📧</strong> ${order.customer.email}</div>
-              <div><strong>📞</strong> ${order.customer.phone}</div>
-              <div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div>
-            </div>
-            ${order.utr ? `<div class="payment-info"><p><strong>💳 UTR:</strong> <span style="color:var(--primary);font-weight:bold;">${order.utr}</span></p><p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? (order.paymentSubmittedAt.toDate ? order.paymentSubmittedAt.toDate().toLocaleString() : order.paymentSubmittedAt) : '-'}</p><p><strong>📊 Status:</strong> <span class="order-status ${paymentClasses[order.paymentStatus]}">${paymentLabels[order.paymentStatus]}</span></p></div>` : `<div class="payment-info"><p style="color:var(--warning);">⚠️ Payment pending - Please submit UTR</p><button onclick='showPaymentModal(${JSON.stringify(order).replace(/'/g, "&#39;")})' class="btn" style="width:100%;margin-top:10px;background:var(--warning);color:white;">💳 Submit UTR</button></div>`}
-            <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
-          </div>`;
-        }).join('');
+        return;
       }
-      ordersModal.classList.add("open");
+      
+      const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
+      const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
+      const paymentLabels = { 
+        [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", 
+        [PAYMENT_STATUS.APPROVED]: "✅ Paid & Approved", 
+        [PAYMENT_STATUS.REJECTED]: "❌ Rejected" 
+      };
+      const paymentClasses = { 
+        [PAYMENT_STATUS.PENDING]: "status-payment-pending", 
+        [PAYMENT_STATUS.APPROVED]: "status-payment-approved", 
+        [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" 
+      };
+      
+      document.getElementById("ordersList").innerHTML = snapshot.docs.map(doc => {
+        const order = doc.data();
+        order.firestoreId = doc.id;
+        
+        const paymentStatus = order.paymentStatus || PAYMENT_STATUS.PENDING;
+        const orderStatus = order.status || ORDER_STATUS.CONFIRMED;
+        
+        return `<div class="order-card">
+          <div class="order-header">
+            <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
+            <div style="text-align:right;">
+              <span class="order-status ${orderClasses[orderStatus]}">${orderLabels[orderStatus]}</span><br>
+              <span class="order-status ${paymentClasses[paymentStatus]}" style="margin-top:5px;display:inline-block;">${paymentLabels[paymentStatus]}</span>
+            </div>
+          </div>
+          <div class="order-items">
+            ${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}
+          </div>
+          <div class="customer-info">
+            <div><strong>👤</strong> ${order.customer.name}</div>
+            <div><strong>📧</strong> ${order.customer.email}</div>
+            <div><strong>📞</strong> ${order.customer.phone}</div>
+            <div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div>
+          </div>
+          ${order.utr ? `<div class="payment-info">
+            <p><strong>💳 UTR:</strong> <span style="color:var(--primary);font-weight:bold;">${order.utr}</span></p>
+            <p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? (order.paymentSubmittedAt.toDate ? order.paymentSubmittedAt.toDate().toLocaleString() : order.paymentSubmittedAt) : '-'}</p>
+            <p><strong>📊 Payment Status:</strong> <span class="order-status ${paymentClasses[paymentStatus]}">${paymentLabels[paymentStatus]}</span></p>
+            ${paymentStatus === PAYMENT_STATUS.APPROVED ? '<p style="color:var(--success);margin-top:10px;"><strong>✅ Admin has approved your payment!</strong></p>' : ''}
+            ${paymentStatus === PAYMENT_STATUS.REJECTED ? '<p style="color:var(--danger);margin-top:10px;"><strong>❌ Payment was rejected. Please contact support.</strong></p>' : ''}
+          </div>` : `<div class="payment-info">
+            <p style="color:var(--warning);">⚠️ Payment pending - Please submit UTR</p>
+            <button onclick='showPaymentModal(${JSON.stringify(order).replace(/'/g, "&#39;")})' class="btn" style="width:100%;margin-top:10px;background:var(--warning);color:white;">💳 Submit UTR</button>
+          </div>`}
+          <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
+        </div>`;
+      }).join('');
+      
+      console.log("✅ Orders displayed successfully");
     })
     .catch((err) => {
       console.error("❌ Error loading orders:", err);
-      showToast("Error loading orders", "error");
+      document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Error loading orders</h3><p>${err.message}</p><button onclick="showOrders()" class="btn" style="margin-top:10px;">Retry</button></div>`;
     });
 }
 
@@ -735,4 +735,3 @@ document.addEventListener("DOMContentLoaded", function(){
 
 </body>
 </html>
-
