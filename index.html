@@ -16,9 +16,11 @@
 body{ font-family:Arial, sans-serif; background:#f5f7fb; color:var(--text); }
 header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); z-index:100; }
 .logo{ font-size:1.3rem; font-weight:700; cursor:pointer; }
-.header-btns{ display:flex; gap:10px; }
-.cart-pill, .orders-pill, .admin-pill{ padding:8px 14px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:#fff; font-weight:600; }
-.cart-pill:hover, .orders-pill:hover, .admin-pill:hover{ background:#f8f9fa; }
+.header-btns{ display:flex; gap:10px; align-items:center; }
+.cart-pill, .orders-pill, .admin-pill, .auth-btn{ padding:8px 14px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:#fff; font-weight:600; }
+.cart-pill:hover, .orders-pill:hover, .admin-pill:hover, .auth-btn:hover{ background:#f8f9fa; }
+.user-info{ display:flex; align-items:center; gap:10px; padding:8px 14px; background:#f8f9fa; border-radius:20px; }
+.user-info span{ font-weight:600; color:var(--primary); }
 .hero{ padding:60px 5%; background:linear-gradient(135deg,#171f45,#403ab4); color:#fff; text-align:center; }
 .hero h1{ margin-bottom:10px; }
 .wrap{ max-width:1100px; margin:40px auto; padding:0 5%; }
@@ -65,6 +67,9 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .submit-btn{ width:100%; padding:15px; background:var(--success); color:#fff; border:none; border-radius:8px; font-size:1.1rem; font-weight:700; cursor:pointer; margin-top:10px; }
 .submit-btn:hover{ opacity:0.9; }
 .cancel-btn{ width:100%; padding:12px; border:2px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600; }
+.auth-tabs{ display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid var(--line); }
+.auth-tab{ flex:1; padding:10px; background:none; border:none; cursor:pointer; font-weight:600; font-size:1rem; }
+.auth-tab.active{ color:var(--primary); border-bottom:3px solid var(--primary); margin-bottom:-2px; }
 .orders-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
 .orders-modal.open{ display:flex; }
 .orders-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:900px; max-height:90vh; overflow-y:auto; position:relative; }
@@ -121,6 +126,8 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .close-btn:hover{ color:#000; }
 .empty-state{ text-align:center; padding:3rem; color:#666; }
 .empty-state-icon{ font-size:3rem; margin-bottom:1rem; }
+.login-required{ text-align:center; padding:3rem; }
+.login-required button{ margin-top:20px; padding:12px 30px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600; }
 @media(max-width:600px){ .header-btns{ flex-direction:column; gap:5px; } .form-row{ grid-template-columns:1fr; } .customer-info{ grid-template-columns:1fr; } .status-tracker{ overflow-x:auto; } }
 </style>
 </head>
@@ -129,8 +136,11 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 <header>
   <div class="logo" onclick="goHome()">🛍️ Brandorivk</div>
   <div class="header-btns">
-    <button class="admin-pill" onclick="checkAdminAuth()" id="adminBtn">👨‍💼 Admin</button>
-    <button class="orders-pill" onclick="showOrders()">📦 My Orders</button>
+    <button class="admin-pill" onclick="checkAdminAuth()" id="adminBtn" style="display:none;">👨‍💼 Admin</button>
+    <button class="orders-pill" onclick="checkUserAndShowOrders()">📦 My Orders</button>
+    <div id="userAuthSection">
+      <button class="auth-btn" onclick="showAuthModal()">👤 Sign In</button>
+    </div>
     <button class="cart-pill" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
   </div>
 </header>
@@ -160,9 +170,58 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
     <div class="cart-items" id="cartItems"></div>
     <div class="checkout">
       <p style="display:flex;justify-content:space-between;font-size:1.2rem;"><strong>Total:</strong> <strong style="color:var(--primary);">₹<span id="total">0</span></strong></p>
-      <button class="checkout-btn" onclick="openCheckoutForm()">Proceed to Checkout</button>
+      <button class="checkout-btn" onclick="checkUserAndCheckout()">Proceed to Checkout</button>
       <button class="continue-btn" onclick="cartModal.classList.remove('open')">Continue Shopping</button>
     </div>
+  </div>
+</div>
+
+<!-- User Auth Modal (Login/Signup) -->
+<div class="checkout-form" id="authModal">
+  <div class="form-box" style="max-width:450px;">
+    <button class="close-btn" onclick="closeAuthModal()">×</button>
+    <h2>👤 Welcome to Brandorivk</h2>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signin')" id="signinTab">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')" id="signupTab">Sign Up</button>
+    </div>
+    
+    <!-- Sign In Form -->
+    <form id="signinForm" onsubmit="userSignIn(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signinEmail" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signinPassword" required placeholder="Enter password">
+      </div>
+      <button type="submit" class="submit-btn">Sign In</button>
+      <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+    </form>
+    
+    <!-- Sign Up Form -->
+    <form id="signupForm" onsubmit="userSignUp(event)" style="display:none;">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" required placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="signupPhone" required placeholder="9876543210" pattern="[0-9]{10}">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signupPassword" required placeholder="Min 6 characters" minlength="6">
+      </div>
+      <button type="submit" class="submit-btn">Create Account</button>
+      <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+    </form>
   </div>
 </div>
 
@@ -249,7 +308,7 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
   <div class="form-box" style="max-width:400px;">
     <button class="close-btn" onclick="closeAdminLogin()">×</button>
     <h2>🔐 Admin Login</h2>
-    <form onsubmit="firebaseLogin(event)">
+    <form onsubmit="adminSignIn(event)">
       <div class="form-group">
         <label>Email</label>
         <input type="email" id="adminEmail" required placeholder="admin@brandorivk.com">
@@ -324,29 +383,26 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================
-// PRODUCTS
+// PRODUCTS (With Working Images)
 // ============================================
 const products = [
-  { id: 1, name: "Premium Tee", price: 799, image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Premium+Tee", description: "100% premium cotton, breathable fit." },
-  { id: 2, name: "Urban Shirt", price: 1299, image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Urban+Shirt", description: "Premium print, fade-resistant design." },
-  { id: 3, name: "Street Pants", price: 1599, image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Street+Pants", description: "Stretch fabric, all-day comfort." },
-  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://via.placeholder.com/500x500/6956ff/ffffff?text=Hoodie", description: "Cozy fleece interior, perfect for layering." },
-  { id: 5, name: "Denim Jacket", price: 2499, image: "https://via.placeholder.com/500x500/403ab4/ffffff?text=Denim", description: "Classic cut, durable premium denim." },
-  { id: 6, name: "Cargo Shorts", price: 999, image: "https://via.placeholder.com/500x500/171f45/ffffff?text=Shorts", description: "Multiple pockets, summer ready." }
+  { id: 1, name: "Premium Tee", price: 799, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&q=80", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&q=80", description: "Premium print, fade-resistant design. Stylish button-down." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://images.unsplash.com/photo-1473966968600-fa96b7c38d7c?w=500&q=80", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&q=80", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://images.unsplash.com/photo-1523205771623-e0f4a952f02e?w=500&q=80", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&q=80", description: "Multiple pockets, summer ready." }
 ];
 
-const ORDER_STATUS = {
-  CONFIRMED: 'confirmed',
-  DISPATCHED: 'dispatched',
-  IN_TRANSIT: 'transit',
-  DELIVERED: 'delivered'
-};
+const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
+const ADMIN_EMAIL = "admin@brandorivk.com"; // Change this to your admin email
 
 // ============================================
-// DATA STORAGE (localStorage for demo, Firebase for production)
+// DATA STORAGE
 // ============================================
 let cart = [];
 let orders = [];
+let currentUser = null;
 
 function loadData(){
   try {
@@ -354,12 +410,7 @@ function loadData(){
     const savedOrders = localStorage.getItem("brandorivk_orders");
     cart = savedCart ? JSON.parse(savedCart) : [];
     orders = savedOrders ? JSON.parse(savedOrders) : [];
-    console.log("✅ Loaded:", orders.length, "orders");
-  } catch(e) {
-    console.error("Error loading:", e);
-    cart = [];
-    orders = [];
-  }
+  } catch(e) { console.error("Error loading:", e); cart = []; orders = []; }
 }
 
 function saveData(){
@@ -367,45 +418,199 @@ function saveData(){
     localStorage.setItem("brandorivk_cart", JSON.stringify(cart));
     localStorage.setItem("brandorivk_orders", JSON.stringify(orders));
     return true;
-  } catch(e) {
-    console.error("Error saving:", e);
-    return false;
-  }
+  } catch(e) { console.error("Error saving:", e); return false; }
 }
 
 loadData();
 
 // ============================================
-// FIREBASE AUTH FUNCTIONS
+// FIREBASE AUTH - USER FUNCTIONS
 // ============================================
 
-// Check admin authentication
+// Show auth modal
+function showAuthModal(){
+  document.getElementById("authModal").classList.add("open");
+  switchAuthTab('signin');
+}
+
+function closeAuthModal(){
+  document.getElementById("authModal").classList.remove("open");
+  document.getElementById("signinForm").reset();
+  document.getElementById("signupForm").reset();
+}
+
+// Switch between signin/signup tabs
+function switchAuthTab(tab){
+  const signinForm = document.getElementById("signinForm");
+  const signupForm = document.getElementById("signupForm");
+  const signinTab = document.getElementById("signinTab");
+  const signupTab = document.getElementById("signupTab");
+  
+  if(tab === 'signin'){
+    signinForm.style.display = 'block';
+    signupForm.style.display = 'none';
+    signinTab.classList.add('active');
+    signupTab.classList.remove('active');
+  } else {
+    signinForm.style.display = 'none';
+    signupForm.style.display = 'block';
+    signinTab.classList.remove('active');
+    signupTab.classList.add('active');
+  }
+}
+
+// User Sign Up
+function userSignUp(e){
+  e.preventDefault();
+  const name = document.getElementById("signupName").value;
+  const email = document.getElementById("signupEmail").value;
+  const phone = document.getElementById("signupPhone").value;
+  const password = document.getElementById("signupPassword").value;
+  
+  auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      // Save user info to Firestore
+      const user = userCredential.user;
+      return db.collection('users').doc(user.uid).set({
+        name: name,
+        email: email,
+        phone: phone,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        role: 'customer'
+      });
+    })
+    .then(() => {
+      showToast("Account created successfully! 🎉");
+      closeAuthModal();
+      updateUserUI();
+    })
+    .catch((error) => {
+      showToast("Sign up failed: " + error.message, "error");
+    });
+}
+
+// User Sign In
+function userSignIn(e){
+  e.preventDefault();
+  const email = document.getElementById("signinEmail").value;
+  const password = document.getElementById("signinPassword").value;
+  
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      showToast("Welcome back! 👋");
+      closeAuthModal();
+      updateUserUI();
+    })
+    .catch((error) => {
+      showToast("Sign in failed: " + error.message, "error");
+    });
+}
+
+// User Sign Out
+function userSignOut(){
+  auth.signOut().then(() => {
+    showToast("Logged out successfully");
+    updateUserUI();
+  });
+}
+
+// Update UI based on auth state
+function updateUserUI(){
+  const user = auth.currentUser;
+  const userAuthSection = document.getElementById("userAuthSection");
+  
+  if(user){
+    // User is logged in
+    currentUser = user;
+    // Get user data from Firestore
+    db.collection('users').doc(user.uid).get().then((doc) => {
+      if(doc.exists){
+        const userData = doc.data();
+        userAuthSection.innerHTML = `
+          <div class="user-info">
+            <span>👤 ${userData.name || user.email}</span>
+            <button class="auth-btn" onclick="userSignOut()" style="margin-left:5px;">Logout</button>
+          </div>
+        `;
+      }
+    });
+    
+    // Check if admin
+    if(user.email === ADMIN_EMAIL){
+      document.getElementById("adminBtn").style.display = 'block';
+    } else {
+      document.getElementById("adminBtn").style.display = 'none';
+    }
+  } else {
+    // User is logged out
+    currentUser = null;
+    userAuthSection.innerHTML = '<button class="auth-btn" onclick="showAuthModal()">👤 Sign In</button>';
+    document.getElementById("adminBtn").style.display = 'none';
+  }
+}
+
+// Check if user is logged in before showing orders
+function checkUserAndShowOrders(){
+  if(!auth.currentUser){
+    showToast("Please sign in to view your orders", "error");
+    showAuthModal();
+  } else {
+    showOrders();
+  }
+}
+
+// Check if user is logged in before checkout
+function checkUserAndCheckout(){
+  if(cart.length === 0){
+    showToast("Cart is empty!", "error");
+    return;
+  }
+  if(!auth.currentUser){
+    showToast("Please sign in to checkout", "error");
+    cartModal.classList.remove("open");
+    showAuthModal();
+  } else {
+    openCheckoutForm();
+  }
+}
+
+// Listen for auth state changes
+auth.onAuthStateChanged((user) => {
+  updateUserUI();
+  console.log("Auth state:", user ? `Logged in as ${user.email}` : "Logged out");
+});
+
+// ============================================
+// FIREBASE AUTH - ADMIN FUNCTIONS
+// ============================================
+
 function checkAdminAuth(){
   const user = auth.currentUser;
-  if(user){
-    // Already logged in
+  if(user && user.email === ADMIN_EMAIL){
     showAdmin();
   } else {
-    // Show login modal
     document.getElementById("adminLoginModal").classList.add("open");
   }
 }
 
-// Close admin login
 function closeAdminLogin(){
   document.getElementById("adminLoginModal").classList.remove("open");
   document.getElementById("adminEmail").value = "";
   document.getElementById("adminPass").value = "";
 }
 
-// Firebase login
-function firebaseLogin(e){
+function adminSignIn(e){
   e.preventDefault();
   const email = document.getElementById("adminEmail").value;
   const pass = document.getElementById("adminPass").value;
   
+  if(email !== ADMIN_EMAIL){
+    showToast("Not an admin account!", "error");
+    return;
+  }
+  
   auth.signInWithEmailAndPassword(email, pass)
-    .then((userCredential) => {
+    .then(() => {
       showToast("Admin login successful! 🔓");
       closeAdminLogin();
       showAdmin();
@@ -415,40 +620,18 @@ function firebaseLogin(e){
     });
 }
 
-// Admin logout
 function adminLogout(){
   auth.signOut().then(() => {
-    showToast("Logged out successfully");
+    showToast("Admin logged out");
     closeAdmin();
-    updateAdminButton();
+    updateUserUI();
   });
 }
 
-// Check if admin is logged in
 function isAdminLoggedIn(){
-  return auth.currentUser !== null;
-}
-
-// Update admin button based on login status
-function updateAdminButton(){
-  const btn = document.getElementById("adminBtn");
   const user = auth.currentUser;
-  if(user){
-    btn.textContent = "👨‍💼 Admin ✓";
-    btn.style.background = "#d4edda";
-    btn.style.borderColor = "#27ae60";
-  } else {
-    btn.textContent = "👨‍💼 Admin";
-    btn.style.background = "#fff";
-    btn.style.borderColor = "#e9edfb";
-  }
+  return user && user.email === ADMIN_EMAIL;
 }
-
-// Listen for auth state changes
-auth.onAuthStateChanged((user) => {
-  updateAdminButton();
-  console.log("Auth state:", user ? "Logged in" : "Logged out");
-});
 
 // ============================================
 // DOM ELEMENTS
@@ -468,9 +651,7 @@ const totalEl = document.getElementById("total");
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-function formatCurrency(amount){
-  return "₹" + Number(amount).toLocaleString('en-IN');
-}
+function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('en-IN'); }
 
 function renderProducts(){
   grid.innerHTML = products.map(p => `
@@ -551,13 +732,26 @@ function openCheckoutForm(){
       <span>${formatCurrency(item.price * item.qty)}</span>
     </div>
   `).join('');
+  
+  // Pre-fill user info if logged in
+  if(auth.currentUser){
+    db.collection('users').doc(auth.currentUser.uid).get().then((doc) => {
+      if(doc.exists){
+        const userData = doc.data();
+        document.getElementById("custName").value = userData.name || "";
+        document.getElementById("custEmail").value = userData.email || "";
+        document.getElementById("custPhone").value = userData.phone || "";
+      }
+    });
+  }
+  
   checkoutModal.classList.add("open");
 }
 
 function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
 
 // ============================================
-// PLACE ORDER (Save to localStorage + Firebase optional)
+// PLACE ORDER
 // ============================================
 function placeOrder(e){
   e.preventDefault();
@@ -569,6 +763,7 @@ function placeOrder(e){
   const order = {
     orderId: "ORD-" + Date.now(),
     orderDate: new Date().toLocaleString('en-IN'),
+    userId: auth.currentUser ? auth.currentUser.uid : 'guest',
     customer: {
       name: document.getElementById("custName").value,
       email: document.getElementById("custEmail").value,
@@ -589,6 +784,11 @@ function placeOrder(e){
   
   orders.unshift(order);
   const saved = saveData();
+  
+  // Also save to Firestore (optional, for backup)
+  if(auth.currentUser){
+    db.collection('orders').add(order).catch(err => console.log("Firestore save error:", err));
+  }
   
   if(saved){
     cart = [];
@@ -624,15 +824,18 @@ function updateOrderStatus(orderId, newStatus){
 }
 
 function showOrders(){
-  if(orders.length === 0){
+  const userOrders = auth.currentUser ? orders.filter(o => o.userId === auth.currentUser.uid) : orders;
+  
+  if(userOrders.length === 0){
     document.getElementById("ordersList").innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📦</div>
         <h3>No orders yet</h3>
-        <p>Start shopping to see your orders here!</p>
+        <p>${auth.currentUser ? "You haven't placed any orders yet." : "Please sign in to view your orders."}</p>
+        ${!auth.currentUser ? '<button onclick="closeOrders(); showAuthModal();" style="margin-top:20px;padding:12px 30px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;">Sign In to View Orders</button>' : ''}
       </div>`;
   } else {
-    document.getElementById("ordersList").innerHTML = orders.map(order => {
+    document.getElementById("ordersList").innerHTML = userOrders.map(order => {
       const statusLabels = { [ORDER_STATUS.CONFIRMED]: "Confirmed", [ORDER_STATUS.DISPATCHED]: "Dispatched", [ORDER_STATUS.IN_TRANSIT]: "In Transit", [ORDER_STATUS.DELIVERED]: "Delivered" };
       const statusClasses = { [ORDER_STATUS.CONFIRMED]: "status-confirmed", [ORDER_STATUS.DISPATCHED]: "status-dispatched", [ORDER_STATUS.IN_TRANSIT]: "status-transit", [ORDER_STATUS.DELIVERED]: "status-delivered" };
       const getStatusStep = (status) => ({ [ORDER_STATUS.CONFIRMED]: 1, [ORDER_STATUS.DISPATCHED]: 2, [ORDER_STATUS.IN_TRANSIT]: 3, [ORDER_STATUS.DELIVERED]: 4 }[status]);
@@ -667,7 +870,6 @@ function showOrders(){
         <p style="color:#666;font-size:0.9rem;margin:10px 0;"><strong>🏠</strong> ${order.customer.address}${order.customer.landmark ? ', ' + order.customer.landmark : ''}, ${order.customer.city}, ${order.customer.state}</p>
         <div class="payment-method"><p><strong>💳 Payment:</strong> ${order.paymentLabel}</p></div>
         <div class="order-total">💰 <strong>Total Paid: ${formatCurrency(order.total)}</strong></div>
-        ${order.status !== ORDER_STATUS.DELIVERED ? `<div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--line);"><p style="font-size:0.85rem;color:#666;margin-bottom:10px;">🔧 Update Status:</p><div style="display:flex;gap:10px;flex-wrap:wrap;">${order.status === ORDER_STATUS.CONFIRMED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DISPATCHED}')" class="action-btn btn-dispatch">Mark Dispatched</button>` : ''}${order.status === ORDER_STATUS.DISPATCHED ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.IN_TRANSIT}')" class="action-btn btn-transit">Mark In Transit</button>` : ''}${order.status === ORDER_STATUS.IN_TRANSIT ? `<button onclick="updateOrderStatus('${order.orderId}', '${ORDER_STATUS.DELIVERED}')" class="action-btn btn-deliver">Mark Delivered</button>` : ''}</div></div>` : ''}
       </div>`;
     }).join('');
   }
@@ -677,7 +879,7 @@ function showOrders(){
 function closeOrders(){ ordersModal.classList.remove("open"); }
 
 // ============================================
-// ADMIN PANEL (PROTECTED)
+// ADMIN PANEL
 // ============================================
 function showAdmin(){
   if(!isAdminLoggedIn()){
@@ -752,16 +954,16 @@ checkoutModal.onclick = e => { if(e.target === checkoutModal) closeCheckoutForm(
 ordersModal.onclick = e => { if(e.target === ordersModal) closeOrders(); };
 adminModal.onclick = e => { if(e.target === adminModal) closeAdmin(); };
 document.getElementById("adminLoginModal").onclick = e => { if(e.target === document.getElementById("adminLoginModal")) closeAdminLogin(); };
-document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAdmin(); closeAdminLogin(); goHome(); } });
+document.getElementById("authModal").onclick = e => { if(e.target === document.getElementById("authModal")) closeAuthModal(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAdmin(); closeAdminLogin(); closeAuthModal(); goHome(); } });
 
 // ============================================
 // INITIALIZE
 // ============================================
 renderProducts();
 updateCart();
-updateAdminButton();
-console.log("✅ Brandorivk loaded with Firebase Auth!");
+updateUserUI();
+console.log("✅ Brandorivk loaded with User & Admin Auth!");
 </script>
 </body>
 </html>
-
