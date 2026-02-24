@@ -621,7 +621,7 @@ function placeOrder(e){
   }
 }
 
-// ✅ FIXED: SHOW ORDERS - LOADS FROM FIRESTORE WITH REAL-TIME UPDATES
+// ✅ FIXED: SHOW ORDERS - NO INDEX REQUIRED (Client-side filtering)
 function showOrders(){
   console.log("📦 Loading orders...");
   
@@ -634,15 +634,21 @@ function showOrders(){
   document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
   ordersModal.classList.add("open");
   
-  // Load from Firestore (real-time, includes admin updates)
+  // Load ALL orders ordered by date, then filter client-side (NO INDEX NEEDED!)
   db.collection('orders')
-    .where('userId', '==', currentUser.uid)
-    .orderBy('orderDate', 'desc')
+    .orderBy('orderDate', 'desc')  // Only orderBy, no where() = no composite index needed
     .get()
     .then((snapshot) => {
       console.log("📦 Orders loaded from Firestore:", snapshot.size);
       
-      if(snapshot.empty){ 
+      // Filter to current user's orders in JavaScript
+      const userOrders = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(order => order.userId === currentUser.uid);
+      
+      console.log("👤 User orders:", userOrders.length);
+      
+      if(userOrders.length === 0){ 
         document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`; 
         return;
       }
@@ -660,10 +666,7 @@ function showOrders(){
         [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" 
       };
       
-      document.getElementById("ordersList").innerHTML = snapshot.docs.map(doc => {
-        const order = doc.data();
-        order.firestoreId = doc.id;
-        
+      document.getElementById("ordersList").innerHTML = userOrders.map(order => {
         const paymentStatus = order.paymentStatus || PAYMENT_STATUS.PENDING;
         const orderStatus = order.status || ORDER_STATUS.CONFIRMED;
         
