@@ -610,8 +610,8 @@ function showProduct(productId){
   // Render product detail
   const detailEl = document.getElementById("productDetail");
   detailEl.innerHTML = `
-    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
-        onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image loaded');" console.log('Image fallback for:', '${product.name}');">
+   <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
+     onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image loaded');" console.log('Image fallback for:', '${product.name}');">
     <div class="detail-info">
       <h2>${product.name}</h2>
       <span class="price">${formatCurrency(product.price)}</span>
@@ -837,6 +837,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 </body>
 </html>
+
 
 
 
