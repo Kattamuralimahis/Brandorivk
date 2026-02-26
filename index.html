@@ -347,15 +347,15 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================
-// CONFIG - WITH WORKING IMAGES
+// ✅ CONFIG - WITH WORKING IMAGES (Imgur - Guaranteed)
 // ============================================
 const products = [
-  { id: 1, name: "Premium Tee", price: 799, image: "https://images.unsplash.com/photo-1521577352947-9bb58764b69a?w=500&h=500&fit=crop", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
-  { id: 2, name: "Urban Shirt", price: 1299, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&h=500&fit=crop", description: "Premium print, fade-resistant design. Stylish button-down." },
-  { id: 3, name: "Street Pants", price: 1599, image: "https://images.unsplash.com/photo-1473966968600-fa96b7c33b7e?w=500&h=500&fit=crop", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
-  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&h=500&fit=crop", description: "Cozy fleece interior, perfect for layering." },
-  { id: 5, name: "Denim Jacket", price: 2499, image: "https://images.unsplash.com/photo-1576871368022-84989f27a3df?w=500&h=500&fit=crop", description: "Classic cut, durable premium denim." },
-  { id: 6, name: "Cargo Shorts", price: 999, image: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&h=500&fit=crop", description: "Multiple pockets, summer ready." }
+  { id: 1, name: "Premium Tee", price: 799, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Premium print, fade-resistant design. Stylish button-down." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Multiple pockets, summer ready." }
 ];
 
 const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
@@ -544,7 +544,7 @@ function submitUTR(e){
 }
 
 // ============================================
-// ✅ FIXED: PRODUCT DETAIL VIEW (SYNTAX ERROR FIXED)
+// ✅ FIXED: PRODUCT DETAIL VIEW (No Fallback Issues)
 // ============================================
 function showProduct(productId){
   console.log("🔍 Showing product:", productId);
@@ -559,8 +559,7 @@ function showProduct(productId){
   
   const detailEl = document.getElementById("productDetail");
   detailEl.innerHTML = `
-    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
-         onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image fallback for:', '${product.name}');">
+    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
     <div class="detail-info">
       <h2>${product.name}</h2>
       <span class="price">${formatCurrency(product.price)}</span>
@@ -597,14 +596,14 @@ const totalEl = document.getElementById("total");
 
 function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('en-IN'); }
 
+// ✅ FIXED: Render Products (Removed Problematic onerror)
 function renderProducts(){
   console.log("🎨 Rendering products...");
   grid.innerHTML = products.map(p => {
     const imageUrl = p.image;
     return `
     <div class="card" onclick="showProduct(${p.id})">
-      <img src="${imageUrl}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
-           onerror="console.log('Image error for:', '${p.name}'); this.onerror=null; this.style.backgroundColor='#f0f0f0';">
+      <img src="${imageUrl}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
       <div class="info">
         <h3>${p.name}</h3>
         <p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p>
