@@ -104,8 +104,6 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .verification-status.pending{ background:#ffeaa7; color:#d63031; }
 .verification-status.approved{ background:#55efc4; color:#00b894; }
 .verification-status.rejected{ background:#fab1a0; color:#d63031; }
-
-/* Product Detail View Styles */
 #productDetailView{ display:none; padding:20px 5%; max-width:1000px; margin:0 auto; }
 #productDetailView.active{ display:block; }
 #productGrid.hidden{ display:none; }
@@ -119,7 +117,6 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 .detail-info .price{ font-size:1.5rem; margin:10px 0 20px; display:block; }
 .detail-info p{ color:#666; line-height:1.6; margin-bottom:20px; }
 .detail-info .add{ font-size:1.1rem; padding:12px; }
-
 @media(max-width:768px){ .header-btns{ flex-direction:column; gap:5px; } .form-row{ grid-template-columns:1fr; } .customer-info{ grid-template-columns:1fr; } .hero h1{ font-size:1.5rem; } .grid{ grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); } }
 </style>
 </head>
@@ -142,12 +139,9 @@ header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; 
 </section>
 
 <main class="wrap">
-  <!-- Product Grid View -->
   <div id="productGrid">
     <div class="grid" id="grid"></div>
   </div>
-  
-  <!-- Product Detail View -->
   <div id="productDetailView">
     <button class="back-btn" onclick="goHome()">← Back to Shop</button>
     <div class="product-detail" id="productDetail"></div>
@@ -356,48 +350,12 @@ const db = firebase.firestore();
 // CONFIG - WITH RELIABLE IMAGES
 // ============================================
 const products = [
-  { 
-    id: 1, 
-    name: "Premium Tee", 
-    price: 799, 
-    image: "https://images.unsplash.com/photo-1521577352947-9bb58764b69a?w=500&h=500&fit=crop",
-    description: "100% premium cotton, breathable fit. Perfect for everyday wear." 
-  },
-  { 
-    id: 2, 
-    name: "Urban Shirt", 
-    price: 1299, 
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&h=500&fit=crop",
-    description: "Premium print, fade-resistant design. Stylish button-down." 
-  },
-  { 
-    id: 3, 
-    name: "Street Pants", 
-    price: 1599, 
-    image: "https://images.unsplash.com/photo-1473966968600-fa96b7c33b7e?w=500&h=500&fit=crop",
-    description: "Stretch fabric, all-day comfort. Modern tapered fit." 
-  },
-  { 
-    id: 4, 
-    name: "Classic Hoodie", 
-    price: 1999, 
-    image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&h=500&fit=crop",
-    description: "Cozy fleece interior, perfect for layering." 
-  },
-  { 
-    id: 5, 
-    name: "Denim Jacket", 
-    price: 2499, 
-    image: "https://images.unsplash.com/photo-1576871368022-84989f27a3df?w=500&h=500&fit=crop",
-    description: "Classic cut, durable premium denim." 
-  },
-  { 
-    id: 6, 
-    name: "Cargo Shorts", 
-    price: 999, 
-    image: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&h=500&fit=crop",
-    description: "Multiple pockets, summer ready." 
-  }
+  { id: 1, name: "Premium Tee", price: 799, image: "https://images.unsplash.com/photo-1521577352947-9bb58764b69a?w=500&h=500&fit=crop", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&h=500&fit=crop", description: "Premium print, fade-resistant design. Stylish button-down." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://images.unsplash.com/photo-1473966968600-fa96b7c33b7e?w=500&h=500&fit=crop", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&h=500&fit=crop", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://images.unsplash.com/photo-1576871368022-84989f27a3df?w=500&h=500&fit=crop", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&h=500&fit=crop", description: "Multiple pockets, summer ready." }
 ];
 
 const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
@@ -413,14 +371,8 @@ let userData = null;
 let currentOrderForPayment = null;
 let paymentTimer = null;
 
-function loadData(){
-  try { cart = JSON.parse(localStorage.getItem("brandorivk_cart")) || []; } catch(e) { console.error("Load error:", e); }
-}
-
-function saveData(){
-  try { localStorage.setItem("brandorivk_cart", JSON.stringify(cart)); return true; } catch(e) { console.error("Save error:", e); return false; }
-}
-
+function loadData(){ try { cart = JSON.parse(localStorage.getItem("brandorivk_cart")) || []; } catch(e) { console.error("Load error:", e); } }
+function saveData(){ try { localStorage.setItem("brandorivk_cart", JSON.stringify(cart)); return true; } catch(e) { console.error("Save error:", e); return false; } }
 loadData();
 
 // ============================================
@@ -570,7 +522,6 @@ function submitUTR(e){
   if (utr.length < 12) { showToast("UTR must be at least 12 digits", "error"); return; }
   console.log("📝 UTR:", utr);
   console.log("🔍 Firestore ID:", currentOrderForPayment.firestoreId);
-  
   if(currentOrderForPayment.firestoreId){
     db.collection('orders').doc(currentOrderForPayment.firestoreId).update({
       utr: utr,
@@ -593,7 +544,7 @@ function submitUTR(e){
 }
 
 // ============================================
-// PRODUCT DETAIL VIEW - FIXED
+// ✅ FIXED: PRODUCT DETAIL VIEW
 // ============================================
 function showProduct(productId){
   console.log("🔍 Showing product:", productId);
@@ -603,15 +554,13 @@ function showProduct(productId){
     return;
   }
   
-  // Hide grid, show detail view
   document.getElementById("productGrid").classList.add("hidden");
   document.getElementById("productDetailView").classList.add("active");
   
-  // Render product detail
   const detailEl = document.getElementById("productDetail");
   detailEl.innerHTML = `
-   <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
-     onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image loaded');" console.log('Image fallback for:', '${product.name}');">
+    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
+         onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image fallback for:', '${product.name}');">
     <div class="detail-info">
       <h2>${product.name}</h2>
       <span class="price">${formatCurrency(product.price)}</span>
@@ -621,7 +570,6 @@ function showProduct(productId){
     </div>
   `;
   
-  // Scroll to top
   window.scrollTo({top: 0, behavior: 'smooth'});
   console.log("✅ Product detail shown");
 }
@@ -652,15 +600,10 @@ function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('e
 function renderProducts(){
   console.log("🎨 Rendering products...");
   grid.innerHTML = products.map(p => {
-    // Use reliable placeholder images
     const imageUrl = p.image;
-    
     return `
     <div class="card" onclick="showProduct(${p.id})">
-      <img src="${imageUrl}" 
-           alt="${p.name}" 
-           referrerpolicy="no-referrer" 
-           crossorigin="anonymous"
+      <img src="${imageUrl}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
            onerror="console.log('Image error for:', '${p.name}'); this.onerror=null; this.style.backgroundColor='#f0f0f0';">
       <div class="info">
         <h3>${p.name}</h3>
@@ -728,8 +671,8 @@ function placeOrder(e){
   
   if(currentUser){
     db.collection('orders').add(order)
-      .then((docRef) => { 
-        console.log("✅ Order saved to Firestore with ID:", docRef.id); 
+      .then((docRef) => {
+        console.log("✅ Order saved to Firestore with ID:", docRef.id);
         order.firestoreId = docRef.id;
         cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
         setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
@@ -740,25 +683,23 @@ function placeOrder(e){
 
 function showOrders(){
   console.log("📦 Loading orders...");
-  if(!currentUser){ 
-    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`; 
-    ordersModal.classList.add("open"); 
-    return; 
+  if(!currentUser){
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`;
+    ordersModal.classList.add("open");
+    return;
   }
   
   document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
   ordersModal.classList.add("open");
   
-  db.collection('orders')
-    .orderBy('orderDate', 'desc')
-    .get()
+  db.collection('orders').orderBy('orderDate', 'desc').get()
     .then((snapshot) => {
       console.log("📦 Orders loaded from Firestore:", snapshot.size);
       const userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(order => order.userId === currentUser.uid);
       console.log("👤 User orders:", userOrders.length);
       
-      if(userOrders.length === 0){ 
-        document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`; 
+      if(userOrders.length === 0){
+        document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`;
         return;
       }
       
@@ -825,20 +766,14 @@ document.getElementById("profileModal").onclick = e => { if(e.target === documen
 document.getElementById("paymentModal").onclick = e => { if(e.target === document.getElementById("paymentModal")) closePaymentModal(); };
 document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); } });
 
-// Initialize
-document.addEventListener("DOMContentLoaded", function(){ 
-  console.log("🚀 Brandorivk loaded!"); 
+document.addEventListener("DOMContentLoaded", function(){
+  console.log("🚀 Brandorivk loaded!");
   console.log("🔥 Firebase Project:", firebaseConfig.projectId);
-  renderProducts(); 
-  loadData(); 
-  updateCart(); 
+  renderProducts();
+  loadData();
+  updateCart();
 });
 </script>
 
 </body>
 </html>
-
-
-
-
-
