@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brandorivk - Premium Apparel</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+:root{ --primary:#6956ff; --line:#e9edfb; --text:#1a1a2e; --success:#27ae60; --danger:#e74c3c; --warning:#f39c12; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:Arial, sans-serif; background:#f5f7fb; color:var(--text); }
+header{ position:sticky; top:0; background:#fff; padding:15px 5%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); z-index:100; }
+.logo{ font-size:1.3rem; font-weight:700; cursor:pointer; }
+.header-btns{ display:flex; gap:10px; align-items:center; }
+.btn{ padding:8px 14px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:#fff; font-weight:600; font-size:0.9rem; }
+.btn:hover{ background:#f8f9fa; }
+.user-info{ display:flex; align-items:center; gap:10px; padding:8px 14px; background:#f8f9fa; border-radius:20px; font-size:0.9rem; }
+.user-info span{ font-weight:600; color:var(--primary); }
+.user-avatar{ width:32px; height:32px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; }
+.hero{ padding:60px 5%; background:linear-gradient(135deg,#171f45,#403ab4); color:#fff; text-align:center; }
+.hero h1{ margin-bottom:10px; font-size:2rem; }
+.wrap{ max-width:1100px; margin:40px auto; padding:0 5%; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:25px; }
+.card{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; cursor:pointer; transition:transform .2s; }
+.card:hover{ transform:translateY(-5px); }
+.card img{ width:100%; height:280px; object-fit:cover; display:block; background:#f0f0f0; }
+.info{ padding:18px; }
+.price{ font-weight:bold; color:var(--primary); font-size:1.2rem; margin:10px 0; }
+.add{ width:100%; padding:12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; }
+.add:hover{ opacity:0.9; }
+.modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.modal.open{ display:flex; }
+.modal-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; position:relative; }
+.modal-box h2{ margin-bottom:20px; color:var(--text); }
+.form-group{ margin-bottom:15px; }
+.form-group label{ display:block; margin-bottom:5px; font-weight:600; color:#333; font-size:0.9rem; }
+.form-group input, .form-group textarea{ width:100%; padding:12px; border:2px solid var(--line); border-radius:8px; font-size:1rem; }
+.form-group input:focus{ outline:none; border-color:var(--primary); }
+.form-row{ display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+.submit-btn{ width:100%; padding:15px; background:var(--success); color:#fff; border:none; border-radius:8px; font-size:1.1rem; font-weight:700; cursor:pointer; margin-top:10px; }
+.submit-btn:hover{ opacity:0.9; }
+.cancel-btn{ width:100%; padding:12px; border:2px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600; }
+.auth-tabs{ display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid var(--line); }
+.auth-tab{ flex:1; padding:10px; background:none; border:none; cursor:pointer; font-weight:600; font-size:1rem; }
+.auth-tab.active{ color:var(--primary); border-bottom:3px solid var(--primary); margin-bottom:-2px; }
+.auth-notice{ background:#f8f9fa; padding:15px; border-radius:8px; margin:15px 0; text-align:center; border-left:4px solid var(--primary); }
+.auth-notice p{ color:#666; font-size:0.9rem; }
+.cart-modal{ position:fixed; inset:0; display:none; justify-content:flex-end; background:rgba(0,0,0,.4); z-index:200; }
+.cart-modal.open{ display:flex; }
+.cart-panel{ width:400px; max-width:90%; background:#fff; height:100%; padding:20px; display:flex; flex-direction:column; }
+.cart-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:15px; border-bottom:1px solid var(--line); margin-bottom:15px; }
+.cart-items{ flex:1; overflow-y:auto; }
+.cart-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+.checkout{ border-top:2px solid var(--line); padding-top:15px; margin-top:auto; }
+.checkout-btn{ width:100%; padding:12px; border:none; border-radius:8px; background:#1f2350; color:#fff; cursor:pointer; font-weight:600; margin-top:10px; }
+.continue-btn{ width:100%; padding:12px; border:2px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600; }
+.orders-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.orders-modal.open{ display:flex; }
+.orders-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:900px; max-height:90vh; overflow-y:auto; position:relative; }
+.orders-box h2{ margin-bottom:20px; color:var(--text); }
+.order-card{ background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:20px; border-left:4px solid var(--primary); }
+.order-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; }
+.order-id{ font-size:1.1rem; font-weight:700; }
+.order-date{ color:#666; font-size:0.9rem; }
+.order-status{ padding:6px 12px; border-radius:20px; font-size:0.85rem; font-weight:600; }
+.status-confirmed{ background:#fff3cd; color:#856404; }
+.status-dispatched{ background:#d1ecf1; color:#0c5460; }
+.status-transit{ background:#d4edda; color:#155724; }
+.status-delivered{ background:#c3e6cb; color:#155724; }
+.status-payment-pending{ background:#ffeaa7; color:#d63031; }
+.status-payment-approved{ background:#55efc4; color:#00b894; }
+.status-payment-rejected{ background:#fab1a0; color:#d63031; }
+.order-items{ background:#fff; padding:15px; border-radius:6px; margin:15px 0; }
+.order-item{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+.customer-info{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.9rem; color:#666; margin:15px 0; }
+.customer-info strong{ color:var(--text); }
+.order-total{ font-weight:bold; color:var(--primary); font-size:1.2rem; margin-top:15px; padding-top:15px; border-top:2px solid var(--line); }
+.payment-info{ background:#fff; padding:15px; border-radius:8px; margin:15px 0; border:2px solid var(--line); }
+.payment-info p{ margin:5px 0; color:#666; }
+.payment-info strong{ color:var(--text); }
+.toast{ position:fixed; bottom:20px; right:20px; background:var(--success); color:white; padding:12px 24px; border-radius:8px; z-index:1000; display:none; animation:slideIn .3s ease; }
+.toast.error{ background:var(--danger); }
+.toast.warning{ background:var(--warning); }
+@keyframes slideIn{ from{ transform:translateX(100%); opacity:0 } to{ transform:translateX(0); opacity:1 } }
+.close-btn{ position:absolute; top:15px; right:20px; border:none; background:none; font-size:28px; cursor:pointer; color:#666; }
+.close-btn:hover{ color:#000; }
+.empty-state{ text-align:center; padding:3rem; color:#666; }
+.profile-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:300; padding:20px; }
+.profile-modal.open{ display:flex; }
+.profile-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:400px; text-align:center; }
+.profile-avatar{ width:80px; height:80px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:bold; margin:0 auto 20px; }
+.profile-name{ font-size:1.3rem; font-weight:700; margin-bottom:5px; }
+.profile-email{ color:#666; margin-bottom:20px; }
+.payment-modal{ position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,.6); z-index:400; padding:20px; }
+.payment-modal.open{ display:flex; }
+.payment-box{ background:#fff; padding:30px; border-radius:12px; width:100%; max-width:500px; }
+.qr-container{ text-align:center; margin:20px 0; padding:20px; background:#f8f9fa; border-radius:8px; }
+.qr-code{ width:200px; height:200px; margin:0 auto; background:#fff; border:2px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.qr-code img{ width:100%; height:100%; }
+.timer{ font-size:1.5rem; font-weight:700; color:var(--danger); text-align:center; margin:15px 0; }
+.verification-status{ padding:10px; border-radius:6px; margin:15px 0; text-align:center; font-weight:600; }
+.verification-status.pending{ background:#ffeaa7; color:#d63031; }
+.verification-status.approved{ background:#55efc4; color:#00b894; }
+.verification-status.rejected{ background:#fab1a0; color:#d63031; }
+#productDetailView{ display:none; padding:20px 5%; max-width:1000px; margin:0 auto; }
+#productDetailView.active{ display:block; }
+#productGrid.hidden{ display:none; }
+.back-btn{ display:inline-flex; align-items:center; gap:5px; padding:8px 16px; background:#fff; border:1px solid var(--line); border-radius:20px; cursor:pointer; margin-bottom:20px; font-weight:600; }
+.back-btn:hover{ background:#f8f9fa; }
+.product-detail{ background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.08); overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:0; }
+@media(max-width:768px){ .product-detail{ grid-template-columns:1fr; } }
+.product-detail img{ width:100%; height:400px; object-fit:cover; background:#f0f0f0; }
+.detail-info{ padding:30px; }
+.detail-info h2{ margin-bottom:10px; font-size:1.5rem; }
+.detail-info .price{ font-size:1.5rem; margin:10px 0 20px; display:block; }
+.detail-info p{ color:#666; line-height:1.6; margin-bottom:20px; }
+.detail-info .add{ font-size:1.1rem; padding:12px; }
+@media(max-width:768px){ .header-btns{ flex-direction:column; gap:5px; } .form-row{ grid-template-columns:1fr; } .customer-info{ grid-template-columns:1fr; } .hero h1{ font-size:1.5rem; } .grid{ grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()">🛍️ Brandorivk</div>
+  <div class="header-btns">
+    <button class="btn" onclick="checkUserAndShowOrders()">📦 My Orders</button>
+    <div id="userAuthSection">
+      <button class="btn" onclick="showAuthModal()">👤 Sign In</button>
+    </div>
+    <button class="btn" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Define Your Style</h1>
+  <p>Premium streetwear essentials designed for bold everyday fashion.</p>
+</section>
+
+<main class="wrap">
+  <div id="productGrid">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="productDetailView">
+    <button class="back-btn" onclick="goHome()">← Back to Shop</button>
+    <div class="product-detail" id="productDetail"></div>
+  </div>
+</main>
+
+<!-- Cart Modal -->
+<div class="cart-modal" id="cartModal">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <h3 style="margin:0;">Your Cart</h3>
+      <button id="closeCart" style="border:none;background:none;font-size:24px;cursor:pointer;">×</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="checkout">
+      <p style="display:flex;justify-content:space-between;font-size:1.2rem;margin:15px 0;"><strong>Total:</strong> <strong style="color:var(--primary);">₹<span id="total">0</span></strong></p>
+      <button class="checkout-btn" onclick="checkUserAndCheckout()">Proceed to Checkout</button>
+      <button class="continue-btn" onclick="cartModal.classList.remove('open')">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal" id="authModal">
+  <div class="modal-box" style="max-width:450px;">
+    <button class="close-btn" onclick="closeAuthModal()">×</button>
+    <h2>👤 Welcome to Brandorivk</h2>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signin')" id="signinTab">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')" id="signupTab">Sign Up</button>
+    </div>
+    <form id="signinForm" onsubmit="userSignIn(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signinEmail" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signinPassword" required placeholder="Enter password">
+      </div>
+      <button type="submit" class="submit-btn">Sign In</button>
+      <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+      <div class="auth-notice">
+        <p>🆕 Don't have an account? <strong><a href="#" onclick="switchAuthTab('signup'); return false;" style="color:var(--primary);">Create Account</a></strong></p>
+      </div>
+    </form>
+    <form id="signupForm" onsubmit="userSignUp(event)" style="display:none;">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" required placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="signupPhone" required placeholder="9876543210">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signupPassword" required placeholder="Min 6 characters" minlength="6">
+      </div>
+      <button type="submit" class="submit-btn">Create Account</button>
+      <button type="button" class="cancel-btn" onclick="closeAuthModal()">Cancel</button>
+      <div class="auth-notice">
+        <p>✅ Already have an account? <strong><a href="#" onclick="switchAuthTab('signin'); return false;" style="color:var(--primary);">Sign In</a></strong></p>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="profile-modal" id="profileModal">
+  <div class="profile-box">
+    <button class="close-btn" onclick="closeProfileModal()">×</button>
+    <div class="profile-avatar" id="profileAvatar">👤</div>
+    <div class="profile-name" id="profileName">User Name</div>
+    <div class="profile-email" id="profileEmail">user@email.com</div>
+    <div style="margin:20px 0; text-align:left;">
+      <p><strong>📞 Phone:</strong> <span id="profilePhone">-</span></p>
+      <p><strong>📅 Member Since:</strong> <span id="profileJoined">-</span></p>
+    </div>
+    <button class="btn" onclick="userSignOut()" style="background:var(--danger); color:white; width:100%;">🚪 Sign Out</button>
+    <button class="btn" onclick="closeProfileModal(); showOrders()" style="margin-top:10px; width:100%;">📦 View My Orders</button>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="payment-modal" id="paymentModal">
+  <div class="payment-box">
+    <button class="close-btn" onclick="closePaymentModal()">×</button>
+    <h2>💳 Complete Payment</h2>
+    <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin:15px 0;">
+      <p><strong>Order ID:</strong> <span id="paymentOrderId">-</span></p>
+      <p><strong>Amount to Pay:</strong> <span id="paymentAmount" style="color:var(--primary); font-size:1.2rem; font-weight:bold;">₹0</span></p>
+    </div>
+    <div class="qr-container">
+      <h3 style="margin-bottom:15px;">📱 Scan to Pay (UPI)</h3>
+      <div class="qr-code">
+        <img id="qrImage" src="" alt="UPI QR Code">
+      </div>
+      <p style="margin-top:15px; color:#666; font-size:0.9rem;"><strong>UPI ID:</strong> <span id="upiIdDisplay">-</span></p>
+    </div>
+    <div class="timer" id="paymentTimer">⏰ Time Remaining: 03:00</div>
+    <form onsubmit="submitUTR(event)">
+      <div class="form-group">
+        <label>UTR / Transaction ID *</label>
+        <input type="text" id="utrNumber" required placeholder="Enter 12-digit UTR number" pattern="[0-9]{12,16}" maxlength="16">
+        <p style="font-size:0.8rem; color:#666; margin-top:5px;">Find UTR in your payment app transaction details</p>
+      </div>
+      <button type="submit" class="submit-btn">✅ Submit Payment Details</button>
+      <button type="button" class="cancel-btn" onclick="closePaymentModal()">Cancel</button>
+    </form>
+    <div class="verification-status pending" id="verificationStatus">⏳ Payment Pending Verification</div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal" id="checkoutModal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeCheckoutForm()">×</button>
+    <h2>📦 Checkout</h2>
+    <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
+      <p style="font-weight:600;margin-bottom:10px;">Order Summary:</p>
+      <div id="checkoutSummary"></div>
+      <p style="margin-top:15px;display:flex;justify-content:space-between;font-size:1.1rem;">
+        <strong>Total Amount:</strong> <strong style="color:var(--primary);">₹<span id="checkoutTotal">0</span></strong>
+      </p>
+    </div>
+    <form id="orderForm" onsubmit="placeOrder(event)">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="custName" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="custEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Phone *</label>
+          <input type="tel" id="custPhone" required pattern="[0-9]{10}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Address *</label>
+        <textarea id="custAddress" required rows="3"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="custCity" required>
+        </div>
+        <div class="form-group">
+          <label>PIN Code *</label>
+          <input type="text" id="custPincode" required pattern="[0-9]{6}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>State *</label>
+          <input type="text" id="custState" required>
+        </div>
+        <div class="form-group">
+          <label>Landmark</label>
+          <input type="text" id="custLandmark">
+        </div>
+      </div>
+      <button type="submit" class="submit-btn">✅ Place Order</button>
+      <button type="button" class="cancel-btn" onclick="closeCheckoutForm()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- Orders Modal -->
+<div class="orders-modal" id="ordersModal">
+  <div class="orders-box">
+    <button class="close-btn" onclick="closeOrders()">×</button>
+    <h2>📦 My Orders</h2>
+    <div id="ordersList" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================
+// 🔥 FIREBASE CONFIG
+// ============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBnYRf-mptGr3oA6ZqmJsjM9m6RCUz4mbM",
+  authDomain: "brandorivk-9a3c2.firebaseapp.com",
+  projectId: "brandorivk-9a3c2",
+  storageBucket: "brandorivk-9a3c2.firebasestorage.app",
+  messagingSenderId: "351821603694",
+  appId: "1:351821603694:web:8b1181b5eaa2253b3a577f",
+  measurementId: "G-WM887NHXE9"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ============================================
+// ✅ CONFIG - WITH WORKING IMAGES (Imgur - Guaranteed)
+// ============================================
+const products = [
+  { id: 1, name: "Premium Tee", price: 799, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Premium print, fade-resistant design. Stylish button-down." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://i.imgur.com/ZGzZfKl.jpeg", description: "Multiple pockets, summer ready." }
+];
+
+const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
+const PAYMENT_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
+const UPI_ID = "nagamnknt1@ybl";
+
+// ============================================
+// DATA
+// ============================================
+let cart = [];
+let currentUser = null;
+let userData = null;
+let currentOrderForPayment = null;
+let paymentTimer = null;
+
+function loadData(){ try { cart = JSON.parse(localStorage.getItem("brandorivk_cart")) || []; } catch(e) { console.error("Load error:", e); } }
+function saveData(){ try { localStorage.setItem("brandorivk_cart", JSON.stringify(cart)); return true; } catch(e) { console.error("Save error:", e); return false; } }
+loadData();
+
+// ============================================
+// AUTH
+// ============================================
+auth.onAuthStateChanged(async (user) => {
+  console.log("🔐 Auth state changed:", user ? user.email : "Logged out");
+  if (user) {
+    currentUser = user;
+    try {
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (doc.exists) { userData = doc.data(); console.log("✅ User data loaded:", userData); }
+      else { userData = { name: user.email.split('@')[0], email: user.email, phone: '' }; }
+    } catch (err) { console.error("❌ Error loading user data:", err.message); userData = { name: user.email.split('@')[0], email: user.email, phone: '' }; }
+    updateUserUI();
+  } else {
+    currentUser = null;
+    userData = null;
+    updateUserUI();
+  }
+});
+
+function updateUserUI(){
+  console.log("🔄 Updating UI...");
+  const userAuthSection = document.getElementById("userAuthSection");
+  if (currentUser) {
+    const name = (userData && userData.name) ? userData.name : currentUser.email.split('@')[0];
+    const initials = name.charAt(0).toUpperCase();
+    userAuthSection.innerHTML = `<button class="btn" onclick="showProfileModal()" style="display:flex;align-items:center;gap:8px;"><div class="user-avatar">${initials}</div><span>${name}</span></button>`;
+    console.log("✅ UI updated - showing:", name);
+  } else {
+    userAuthSection.innerHTML = '<button class="btn" onclick="showAuthModal()">👤 Sign In</button>';
+    console.log("✅ UI updated - showing Sign In");
+  }
+}
+
+function showAuthModal(){ document.getElementById("authModal").classList.add("open"); switchAuthTab('signin'); }
+function closeAuthModal(){ document.getElementById("authModal").classList.remove("open"); document.getElementById("signinForm").reset(); document.getElementById("signupForm").reset(); }
+
+function switchAuthTab(tab){
+  const signinForm = document.getElementById("signinForm");
+  const signupForm = document.getElementById("signupForm");
+  const signinTab = document.getElementById("signinTab");
+  const signupTab = document.getElementById("signupTab");
+  if(tab === 'signin'){ signinForm.style.display = 'block'; signupForm.style.display = 'none'; signinTab.classList.add('active'); signupTab.classList.remove('active'); }
+  else { signinForm.style.display = 'none'; signupForm.style.display = 'block'; signinTab.classList.remove('active'); signupTab.classList.add('active'); }
+}
+
+function userSignUp(e){
+  e.preventDefault();
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+  const phone = document.getElementById("signupPhone").value.trim();
+  const password = document.getElementById("signupPassword").value;
+  if (password.length < 6) { showToast("Password must be at least 6 characters", "error"); return; }
+  auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      return db.collection('users').doc(user.uid).set({ name, email, phone, createdAt: firebase.firestore.FieldValue.serverTimestamp(), role: 'customer' });
+    })
+    .then(() => { showToast("✅ Successfully Registered! Welcome, " + name + " 🎉", "success"); closeAuthModal(); })
+    .catch((error) => {
+      let msg = "Sign up failed";
+      if(error.code === 'auth/email-already-in-use') msg = "Email already registered!";
+      else if(error.code === 'auth/weak-password') msg = "Password too weak (min 6 chars)";
+      showToast(msg, "error");
+    });
+}
+
+function userSignIn(e){
+  e.preventDefault();
+  const email = document.getElementById("signinEmail").value.trim().toLowerCase();
+  const password = document.getElementById("signinPassword").value;
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => { showToast("Welcome back! 👋", "success"); closeAuthModal(); })
+    .catch((error) => {
+      let msg = "Sign in failed";
+      if(error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = "Invalid email or password";
+      showToast(msg, "error");
+    });
+}
+
+function userSignOut(){ auth.signOut().then(() => { showToast("Logged out successfully"); closeProfileModal(); }); }
+
+function showProfileModal(){
+  if (!currentUser || !userData) { showAuthModal(); return; }
+  const initials = (userData.name || currentUser.email).charAt(0).toUpperCase();
+  document.getElementById("profileAvatar").textContent = initials;
+  document.getElementById("profileName").textContent = userData.name || "User";
+  document.getElementById("profileEmail").textContent = userData.email || currentUser.email;
+  document.getElementById("profilePhone").textContent = userData.phone || "-";
+  if (userData.createdAt && userData.createdAt.toDate) document.getElementById("profileJoined").textContent = userData.createdAt.toDate().toLocaleDateString('en-IN');
+  else document.getElementById("profileJoined").textContent = "Recently";
+  document.getElementById("profileModal").classList.add("open");
+}
+
+function closeProfileModal(){ document.getElementById("profileModal").classList.remove("open"); }
+
+// ============================================
+// PAYMENT
+// ============================================
+function showPaymentModal(order){
+  currentOrderForPayment = order;
+  document.getElementById("paymentOrderId").textContent = order.orderId;
+  document.getElementById("paymentAmount").textContent = formatCurrency(order.total);
+  document.getElementById("utrNumber").value = "";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${UPI_ID}&pn=Brandorivk&am=${order.total}&cu=INR`;
+  document.getElementById("qrImage").src = qrUrl;
+  document.getElementById("upiIdDisplay").textContent = UPI_ID;
+  updateVerificationStatus(order.paymentStatus || PAYMENT_STATUS.PENDING);
+  document.getElementById("paymentModal").classList.add("open");
+  startPaymentTimer(3 * 60);
+}
+
+function closePaymentModal(){
+  document.getElementById("paymentModal").classList.remove("open");
+  if (paymentTimer) { clearInterval(paymentTimer); paymentTimer = null; }
+  currentOrderForPayment = null;
+}
+
+function startPaymentTimer(seconds){
+  if (paymentTimer) clearInterval(paymentTimer);
+  let remaining = seconds;
+  const timerEl = document.getElementById("paymentTimer");
+  paymentTimer = setInterval(() => {
+    remaining--;
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    timerEl.textContent = `⏰ Time Remaining: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (remaining <= 0) { clearInterval(paymentTimer); timerEl.textContent = "⏰ Time Expired!"; showToast("Payment time expired!", "error"); }
+    else if (remaining <= 60) timerEl.style.color = "#e74c3c";
+  }, 1000);
+}
+
+function updateVerificationStatus(status){
+  const statusEl = document.getElementById("verificationStatus");
+  if (status === PAYMENT_STATUS.PENDING) { statusEl.className = "verification-status pending"; statusEl.textContent = "⏳ Payment Pending Verification"; }
+  else if (status === PAYMENT_STATUS.APPROVED) { statusEl.className = "verification-status approved"; statusEl.textContent = "✅ Payment Approved Successfully!"; }
+  else if (status === PAYMENT_STATUS.REJECTED) { statusEl.className = "verification-status rejected"; statusEl.textContent = "❌ Payment Rejected. Please contact support."; }
+}
+
+function submitUTR(e){
+  e.preventDefault();
+  console.log("💳 Submitting UTR...");
+  if (!currentOrderForPayment) { showToast("No active order", "error"); return; }
+  const utr = document.getElementById("utrNumber").value.trim();
+  if (utr.length < 12) { showToast("UTR must be at least 12 digits", "error"); return; }
+  console.log("📝 UTR:", utr);
+  console.log("🔍 Firestore ID:", currentOrderForPayment.firestoreId);
+  if(currentOrderForPayment.firestoreId){
+    db.collection('orders').doc(currentOrderForPayment.firestoreId).update({
+      utr: utr,
+      paymentStatus: PAYMENT_STATUS.PENDING,
+      paymentSubmittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+      console.log("✅ UTR saved to Firestore!");
+      showToast("UTR submitted! Admin will verify soon", "success");
+      updateVerificationStatus(PAYMENT_STATUS.PENDING);
+      setTimeout(() => { closePaymentModal(); showOrders(); }, 2000);
+    })
+    .catch((err) => {
+      console.error("❌ Error saving UTR:", err);
+      showToast("Error submitting UTR: " + err.message, "error");
+    });
+  } else {
+    showToast("Order not found in database.", "error");
+  }
+}
+
+// ============================================
+// ✅ FIXED: PRODUCT DETAIL VIEW (No Fallback Issues)
+// ============================================
+function showProduct(productId){
+  console.log("🔍 Showing product:", productId);
+  const product = products.find(p => p.id === productId);
+  if(!product) {
+    console.error("❌ Product not found:", productId);
+    return;
+  }
+  
+  document.getElementById("productGrid").classList.add("hidden");
+  document.getElementById("productDetailView").classList.add("active");
+  
+  const detailEl = document.getElementById("productDetail");
+  detailEl.innerHTML = `
+    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
+    <div class="detail-info">
+      <h2>${product.name}</h2>
+      <span class="price">${formatCurrency(product.price)}</span>
+      <p>${product.description}</p>
+      <p style="color:#666;font-size:0.9rem;margin-bottom:20px;"><strong>Stock:</strong> <span style="color:#27ae60;">✅ In Stock</span></p>
+      <button class="add" onclick="addToCart(${product.id}); event.stopPropagation();">Add to Cart - ${formatCurrency(product.price)}</button>
+    </div>
+  `;
+  
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  console.log("✅ Product detail shown");
+}
+
+function goHome(){
+  console.log("🏠 Going home");
+  document.getElementById("productDetailView").classList.remove("active");
+  document.getElementById("productGrid").classList.remove("hidden");
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ============================================
+// ORDERS & CART
+// ============================================
+function checkUserAndShowOrders(){ if(!currentUser){ showToast("Please sign in to view orders", "error"); showAuthModal(); } else { showOrders(); } }
+function checkUserAndCheckout(){ if(cart.length === 0){ showToast("Cart is empty!", "error"); return; } if(!currentUser){ showToast("Please sign in to checkout", "error"); cartModal.classList.remove("open"); showAuthModal(); } else { openCheckoutForm(); } }
+
+const grid = document.getElementById("grid");
+const cartModal = document.getElementById("cartModal");
+const checkoutModal = document.getElementById("checkoutModal");
+const ordersModal = document.getElementById("ordersModal");
+const cartCount = document.getElementById("cartCount");
+const cartItems = document.getElementById("cartItems");
+const totalEl = document.getElementById("total");
+
+function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('en-IN'); }
+
+// ✅ FIXED: Render Products (Removed Problematic onerror)
+function renderProducts(){
+  console.log("🎨 Rendering products...");
+  grid.innerHTML = products.map(p => {
+    const imageUrl = p.image;
+    return `
+    <div class="card" onclick="showProduct(${p.id})">
+      <img src="${imageUrl}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
+      <div class="info">
+        <h3>${p.name}</h3>
+        <p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p>
+        <div class="price">${formatCurrency(p.price)}</div>
+        <button class="add" onclick="addToCart(${p.id}); event.stopPropagation();">Add to Cart</button>
+      </div>
+    </div>`;
+  }).join('');
+  console.log("✅ Products rendered:", products.length);
+}
+
+function addToCart(id){
+  const product = products.find(p => p.id === id);
+  if(!product) return;
+  const existing = cart.find(i => i.id === id);
+  if(existing){ existing.qty++; showToast(`+1 ${product.name} added`); }
+  else { cart.push({...product, qty: 1}); showToast(`${product.name} added to cart!`); }
+  updateCart(); saveData();
+}
+
+function updateCart(){
+  const count = cart.reduce((sum, i) => sum + i.qty, 0);
+  cartCount.textContent = count;
+  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  totalEl.textContent = Number(total).toLocaleString('en-IN');
+  if(cart.length === 0){ cartItems.innerHTML = "<div style='text-align:center;padding:2rem;color:#666;'>Your cart is empty 🛒</div>"; }
+  else { cartItems.innerHTML = cart.map((item, i) => `<div class="cart-item"><div><strong>${item.name}</strong><br><small style='color:#666;'>${formatCurrency(item.price)} × ${item.qty}</small></div><div style="display:flex;align-items:center;gap:10px;"><strong>${formatCurrency(item.price * item.qty)}</strong><button onclick="removeItem(${i})" style='border:none;background:#e74c3c;color:white;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;'>Remove</button></div></div>`).join(''); }
+}
+
+function removeItem(i){ cart.splice(i, 1); updateCart(); saveData(); showToast("Item removed"); }
+function toggleCart(){ cartModal.classList.toggle("open"); if(cartModal.classList.contains("open")) updateCart(); }
+
+function openCheckoutForm(){
+  if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
+  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  document.getElementById("checkoutTotal").textContent = Number(total).toLocaleString('en-IN');
+  document.getElementById("checkoutSummary").innerHTML = cart.map(item => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('');
+  if(currentUser && userData){ document.getElementById("custName").value = userData.name || ""; document.getElementById("custEmail").value = userData.email || ""; document.getElementById("custPhone").value = userData.phone || ""; }
+  checkoutModal.classList.add("open");
+}
+
+function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
+
+function placeOrder(e){
+  e.preventDefault();
+  console.log("🛒 Placing order...");
+  if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
+  if(!currentUser){ showToast("Please sign in to place order", "error"); showAuthModal(); return; }
+  
+  const order = {
+    orderId: "ORD-" + Date.now(),
+    orderDate: new Date().toLocaleString('en-IN'),
+    userId: currentUser.uid,
+    customer: { name: document.getElementById("custName").value, email: document.getElementById("custEmail").value, phone: document.getElementById("custPhone").value, address: document.getElementById("custAddress").value, city: document.getElementById("custCity").value, pincode: document.getElementById("custPincode").value, state: document.getElementById("custState").value, landmark: document.getElementById("custLandmark").value || "" },
+    items: [...cart],
+    total: cart.reduce((sum, i) => sum + i.price * i.qty, 0),
+    status: ORDER_STATUS.CONFIRMED,
+    paymentStatus: PAYMENT_STATUS.PENDING,
+    utr: null,
+    statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order placed, awaiting payment" }]
+  };
+  
+  console.log("📦 Order created:", order);
+  
+  if(currentUser){
+    db.collection('orders').add(order)
+      .then((docRef) => {
+        console.log("✅ Order saved to Firestore with ID:", docRef.id);
+        order.firestoreId = docRef.id;
+        cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
+        setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
+      })
+      .catch((err) => { console.error("❌ Firestore save failed:", err.message); showToast("Error placing order", "error"); });
+  }
+}
+
+function showOrders(){
+  console.log("📦 Loading orders...");
+  if(!currentUser){
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`;
+    ordersModal.classList.add("open");
+    return;
+  }
+  
+  document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
+  ordersModal.classList.add("open");
+  
+  db.collection('orders').orderBy('orderDate', 'desc').get()
+    .then((snapshot) => {
+      console.log("📦 Orders loaded from Firestore:", snapshot.size);
+      const userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(order => order.userId === currentUser.uid);
+      console.log("👤 User orders:", userOrders.length);
+      
+      if(userOrders.length === 0){
+        document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`;
+        return;
+      }
+      
+      const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
+      const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
+      const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid & Approved", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
+      const paymentClasses = { [PAYMENT_STATUS.PENDING]: "status-payment-pending", [PAYMENT_STATUS.APPROVED]: "status-payment-approved", [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" };
+      
+      document.getElementById("ordersList").innerHTML = userOrders.map(order => {
+        const paymentStatus = order.paymentStatus || PAYMENT_STATUS.PENDING;
+        const orderStatus = order.status || ORDER_STATUS.CONFIRMED;
+        return `<div class="order-card">
+          <div class="order-header">
+            <div><div class="order-id">📦 ${order.orderId}</div><div class="order-date">📅 ${order.orderDate}</div></div>
+            <div style="text-align:right;">
+              <span class="order-status ${orderClasses[orderStatus]}">${orderLabels[orderStatus]}</span><br>
+              <span class="order-status ${paymentClasses[paymentStatus]}" style="margin-top:5px;display:inline-block;">${paymentLabels[paymentStatus]}</span>
+            </div>
+          </div>
+          <div class="order-items">${order.items.map(item => `<div class="order-item"><span>${item.name} × ${item.qty}</span><span>${formatCurrency(item.price * item.qty)}</span></div>`).join('')}</div>
+          <div class="customer-info">
+            <div><strong>👤</strong> ${order.customer.name}</div>
+            <div><strong>📧</strong> ${order.customer.email}</div>
+            <div><strong>📞</strong> ${order.customer.phone}</div>
+            <div><strong>📍</strong> ${order.customer.city} - ${order.customer.pincode}</div>
+          </div>
+          ${order.utr ? `<div class="payment-info">
+            <p><strong>💳 UTR:</strong> <span style="color:var(--primary);font-weight:bold;">${order.utr}</span></p>
+            <p><strong>📅 Submitted:</strong> ${order.paymentSubmittedAt ? (order.paymentSubmittedAt.toDate ? order.paymentSubmittedAt.toDate().toLocaleString() : order.paymentSubmittedAt) : '-'}</p>
+            <p><strong>📊 Payment Status:</strong> <span class="order-status ${paymentClasses[paymentStatus]}">${paymentLabels[paymentStatus]}</span></p>
+            ${paymentStatus === PAYMENT_STATUS.APPROVED ? '<p style="color:var(--success);margin-top:10px;"><strong>✅ Admin has approved your payment!</strong></p>' : ''}
+            ${paymentStatus === PAYMENT_STATUS.REJECTED ? '<p style="color:var(--danger);margin-top:10px;"><strong>❌ Payment was rejected. Please contact support.</strong></p>' : ''}
+          </div>` : `<div class="payment-info">
+            <p style="color:var(--warning);">⚠️ Payment pending - Please submit UTR</p>
+            <button onclick='showPaymentModal(${JSON.stringify(order).replace(/'/g, "&#39;")})' class="btn" style="width:100%;margin-top:10px;background:var(--warning);color:white;">💳 Submit UTR</button>
+          </div>`}
+          <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
+        </div>`;
+      }).join('');
+      console.log("✅ Orders displayed successfully");
+    })
+    .catch((err) => {
+      console.error("❌ Error loading orders:", err);
+      document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Error loading orders</h3><p>${err.message}</p><button onclick="showOrders()" class="btn" style="margin-top:10px;">Retry</button></div>`;
+    });
+}
+
+function closeOrders(){ ordersModal.classList.remove("open"); }
+
+function showToast(msg, type = "success"){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast" + (type === "error" ? " error" : type === "warning" ? " warning" : "");
+  t.style.display = "block"; setTimeout(() => t.style.display = "none", 3000);
+}
+
+// Event Listeners
+document.getElementById("cartBtn").onclick = toggleCart;
+document.getElementById("closeCart").onclick = () => cartModal.classList.remove("open");
+cartModal.onclick = e => { if(e.target === cartModal) cartModal.classList.remove("open"); };
+checkoutModal.onclick = e => { if(e.target === checkoutModal) closeCheckoutForm(); };
+ordersModal.onclick = e => { if(e.target === ordersModal) closeOrders(); };
+document.getElementById("authModal").onclick = e => { if(e.target === document.getElementById("authModal")) closeAuthModal(); };
+document.getElementById("profileModal").onclick = e => { if(e.target === document.getElementById("profileModal")) closeProfileModal(); };
+document.getElementById("paymentModal").onclick = e => { if(e.target === document.getElementById("paymentModal")) closePaymentModal(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); } });
+
+document.addEventListener("DOMContentLoaded", function(){
+  console.log("🚀 Brandorivk loaded!");
+  console.log("🔥 Firebase Project:", firebaseConfig.projectId);
+  renderProducts();
+  loadData();
+  updateCart();
+});
+</script>
+
+</body>
+</html>
