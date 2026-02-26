@@ -611,7 +611,7 @@ function showProduct(productId){
   const detailEl = document.getElementById("productDetail");
   detailEl.innerHTML = `
     <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous"
-         onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500/6956ff/ffffff?text=${encodeURIComponent(product.name)}'; console.log('Image fallback for:', '${product.name}');">
+        onerror="this.onerror=null; this.style.backgroundColor='#f0f0f0'; console.log('Image loaded');" console.log('Image fallback for:', '${product.name}');">
     <div class="detail-info">
       <h2>${product.name}</h2>
       <span class="price">${formatCurrency(product.price)}</span>
@@ -661,7 +661,7 @@ function renderProducts(){
            alt="${p.name}" 
            referrerpolicy="no-referrer" 
            crossorigin="anonymous"
-           onerror="console.log('Image error for:', '${p.name}'); this.onerror=null; this.src='https://via.placeholder.com/500x500/6956ff/ffffff?text=${encodeURIComponent(p.name)}';">
+           onerror="console.log('Image error for:', '${p.name}'); this.onerror=null; this.style.backgroundColor='#f0f0f0';">
       <div class="info">
         <h3>${p.name}</h3>
         <p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p>
@@ -837,6 +837,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 </body>
 </html>
+
 
 
 
