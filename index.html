@@ -347,15 +347,19 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================
-// ✅ CONFIG - WITH WORKING IMAGES (Imgur - Guaranteed)
+// ✅ PRODUCTS - REPLACE image URLs with your
+//    ImgBB DIRECT links (https://i.ibb.co/...)
+//    Current: all using your uploaded image
+//    To fix: upload each product photo to imgbb.com
+//    and replace each URL below with its direct link
 // ============================================
 const products = [
-  { id: 1, name: "Premium Tee", price: 799, image: "https://ibb.co/gZy0Vksy", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
-  { id: 2, name: "Urban Shirt", price: 1299, image: "https://ibb.co/gZy0Vksy", description: "Premium print, fade-resistant design. Stylish button-down." },
-  { id: 3, name: "Street Pants", price: 1599, image: "https://ibb.co/gZy0Vksy", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
-  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://ibb.co/gZy0Vksy", description: "Cozy fleece interior, perfect for layering." },
-  { id: 5, name: "Denim Jacket", price: 2499, image: "https://ibb.co/gZy0Vksy", description: "Classic cut, durable premium denim." },
-  { id: 6, name: "Cargo Shorts", price: 999, image: "https://ibb.co/gZy0Vksy", description: "Multiple pockets, summer ready." }
+  { id: 1, name: "Premium Tee", price: 799, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "100% premium cotton, breathable fit. Perfect for everyday wear." },
+  { id: 2, name: "Urban Shirt", price: 1299, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "Premium print, fade-resistant design. Stylish button-down." },
+  { id: 3, name: "Street Pants", price: 1599, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "Stretch fabric, all-day comfort. Modern tapered fit." },
+  { id: 4, name: "Classic Hoodie", price: 1999, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "Cozy fleece interior, perfect for layering." },
+  { id: 5, name: "Denim Jacket", price: 2499, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "Classic cut, durable premium denim." },
+  { id: 6, name: "Cargo Shorts", price: 999, image: "https://i.ibb.co/4RWbdhBW/11.jpg", description: "Multiple pockets, summer ready." }
 ];
 
 const ORDER_STATUS = { CONFIRMED: 'confirmed', DISPATCHED: 'dispatched', IN_TRANSIT: 'transit', DELIVERED: 'delivered' };
@@ -379,14 +383,13 @@ loadData();
 // AUTH
 // ============================================
 auth.onAuthStateChanged(async (user) => {
-  console.log("🔐 Auth state changed:", user ? user.email : "Logged out");
   if (user) {
     currentUser = user;
     try {
       const doc = await db.collection('users').doc(user.uid).get();
-      if (doc.exists) { userData = doc.data(); console.log("✅ User data loaded:", userData); }
+      if (doc.exists) { userData = doc.data(); }
       else { userData = { name: user.email.split('@')[0], email: user.email, phone: '' }; }
-    } catch (err) { console.error("❌ Error loading user data:", err.message); userData = { name: user.email.split('@')[0], email: user.email, phone: '' }; }
+    } catch (err) { userData = { name: user.email.split('@')[0], email: user.email, phone: '' }; }
     updateUserUI();
   } else {
     currentUser = null;
@@ -396,16 +399,13 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 function updateUserUI(){
-  console.log("🔄 Updating UI...");
   const userAuthSection = document.getElementById("userAuthSection");
   if (currentUser) {
     const name = (userData && userData.name) ? userData.name : currentUser.email.split('@')[0];
     const initials = name.charAt(0).toUpperCase();
     userAuthSection.innerHTML = `<button class="btn" onclick="showProfileModal()" style="display:flex;align-items:center;gap:8px;"><div class="user-avatar">${initials}</div><span>${name}</span></button>`;
-    console.log("✅ UI updated - showing:", name);
   } else {
     userAuthSection.innerHTML = '<button class="btn" onclick="showAuthModal()">👤 Sign In</button>';
-    console.log("✅ UI updated - showing Sign In");
   }
 }
 
@@ -516,12 +516,9 @@ function updateVerificationStatus(status){
 
 function submitUTR(e){
   e.preventDefault();
-  console.log("💳 Submitting UTR...");
   if (!currentOrderForPayment) { showToast("No active order", "error"); return; }
   const utr = document.getElementById("utrNumber").value.trim();
   if (utr.length < 12) { showToast("UTR must be at least 12 digits", "error"); return; }
-  console.log("📝 UTR:", utr);
-  console.log("🔍 Firestore ID:", currentOrderForPayment.firestoreId);
   if(currentOrderForPayment.firestoreId){
     db.collection('orders').doc(currentOrderForPayment.firestoreId).update({
       utr: utr,
@@ -529,37 +526,27 @@ function submitUTR(e){
       paymentSubmittedAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
-      console.log("✅ UTR saved to Firestore!");
       showToast("UTR submitted! Admin will verify soon", "success");
       updateVerificationStatus(PAYMENT_STATUS.PENDING);
       setTimeout(() => { closePaymentModal(); showOrders(); }, 2000);
     })
-    .catch((err) => {
-      console.error("❌ Error saving UTR:", err);
-      showToast("Error submitting UTR: " + err.message, "error");
-    });
+    .catch((err) => { showToast("Error submitting UTR: " + err.message, "error"); });
   } else {
     showToast("Order not found in database.", "error");
   }
 }
 
 // ============================================
-// ✅ FIXED: PRODUCT DETAIL VIEW (No Fallback Issues)
+// PRODUCT DETAIL VIEW
 // ============================================
 function showProduct(productId){
-  console.log("🔍 Showing product:", productId);
   const product = products.find(p => p.id === productId);
-  if(!product) {
-    console.error("❌ Product not found:", productId);
-    return;
-  }
-  
+  if(!product) return;
   document.getElementById("productGrid").classList.add("hidden");
   document.getElementById("productDetailView").classList.add("active");
-  
   const detailEl = document.getElementById("productDetail");
   detailEl.innerHTML = `
-    <img src="${product.image}" alt="${product.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
+    <img src="${product.image}" alt="${product.name}">
     <div class="detail-info">
       <h2>${product.name}</h2>
       <span class="price">${formatCurrency(product.price)}</span>
@@ -568,13 +555,10 @@ function showProduct(productId){
       <button class="add" onclick="addToCart(${product.id}); event.stopPropagation();">Add to Cart - ${formatCurrency(product.price)}</button>
     </div>
   `;
-  
   window.scrollTo({top: 0, behavior: 'smooth'});
-  console.log("✅ Product detail shown");
 }
 
 function goHome(){
-  console.log("🏠 Going home");
   document.getElementById("productDetailView").classList.remove("active");
   document.getElementById("productGrid").classList.remove("hidden");
   window.scrollTo({top: 0, behavior: 'smooth'});
@@ -596,23 +580,17 @@ const totalEl = document.getElementById("total");
 
 function formatCurrency(amount){ return "₹" + Number(amount).toLocaleString('en-IN'); }
 
-// ✅ FIXED: Render Products (Removed Problematic onerror)
 function renderProducts(){
-  console.log("🎨 Rendering products...");
-  grid.innerHTML = products.map(p => {
-    const imageUrl = p.image;
-    return `
+  grid.innerHTML = products.map(p => `
     <div class="card" onclick="showProduct(${p.id})">
-      <img src="${imageUrl}" alt="${p.name}" referrerpolicy="no-referrer" crossorigin="anonymous">
+      <img src="${p.image}" alt="${p.name}">
       <div class="info">
         <h3>${p.name}</h3>
         <p style="color:#666;font-size:0.9rem;margin:5px 0;">${p.description}</p>
         <div class="price">${formatCurrency(p.price)}</div>
         <button class="add" onclick="addToCart(${p.id}); event.stopPropagation();">Add to Cart</button>
       </div>
-    </div>`;
-  }).join('');
-  console.log("✅ Products rendered:", products.length);
+    </div>`).join('');
 }
 
 function addToCart(id){
@@ -649,10 +627,8 @@ function closeCheckoutForm(){ checkoutModal.classList.remove("open"); }
 
 function placeOrder(e){
   e.preventDefault();
-  console.log("🛒 Placing order...");
   if(cart.length === 0){ showToast("Cart is empty!", "error"); return; }
   if(!currentUser){ showToast("Please sign in to place order", "error"); showAuthModal(); return; }
-  
   const order = {
     orderId: "ORD-" + Date.now(),
     orderDate: new Date().toLocaleString('en-IN'),
@@ -665,48 +641,34 @@ function placeOrder(e){
     utr: null,
     statusHistory: [{ status: ORDER_STATUS.CONFIRMED, date: new Date().toLocaleString('en-IN'), message: "Order placed, awaiting payment" }]
   };
-  
-  console.log("📦 Order created:", order);
-  
-  if(currentUser){
-    db.collection('orders').add(order)
-      .then((docRef) => {
-        console.log("✅ Order saved to Firestore with ID:", docRef.id);
-        order.firestoreId = docRef.id;
-        cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
-        setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
-      })
-      .catch((err) => { console.error("❌ Firestore save failed:", err.message); showToast("Error placing order", "error"); });
-  }
+  db.collection('orders').add(order)
+    .then((docRef) => {
+      order.firestoreId = docRef.id;
+      cart = []; updateCart(); closeCheckoutForm(); cartModal.classList.remove("open"); document.getElementById("orderForm").reset();
+      setTimeout(() => { showToast("Order placed! Complete payment", "success"); showPaymentModal(order); }, 500);
+    })
+    .catch((err) => { showToast("Error placing order", "error"); });
 }
 
 function showOrders(){
-  console.log("📦 Loading orders...");
   if(!currentUser){
-    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>Please sign in to view orders</h3></div>`;
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state"><h3>Please sign in to view orders</h3></div>`;
     ordersModal.classList.add("open");
     return;
   }
-  
-  document.getElementById("ordersList").innerHTML = '<div class="loading" style="text-align:center;padding:2rem;">Loading your orders...</div>';
+  document.getElementById("ordersList").innerHTML = '<div style="text-align:center;padding:2rem;">Loading your orders...</div>';
   ordersModal.classList.add("open");
-  
   db.collection('orders').orderBy('orderDate', 'desc').get()
     .then((snapshot) => {
-      console.log("📦 Orders loaded from Firestore:", snapshot.size);
       const userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(order => order.userId === currentUser.uid);
-      console.log("👤 User orders:", userOrders.length);
-      
       if(userOrders.length === 0){
-        document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">📦</div><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`;
+        document.getElementById("ordersList").innerHTML = `<div class="empty-state"><h3>No orders yet</h3><p>You haven't placed any orders.</p></div>`;
         return;
       }
-      
       const orderLabels = { confirmed: "Confirmed", dispatched: "Dispatched", transit: "In Transit", delivered: "Delivered" };
       const orderClasses = { confirmed: "status-confirmed", dispatched: "status-dispatched", transit: "status-transit", delivered: "status-delivered" };
       const paymentLabels = { [PAYMENT_STATUS.PENDING]: "⏳ Payment Pending", [PAYMENT_STATUS.APPROVED]: "✅ Paid & Approved", [PAYMENT_STATUS.REJECTED]: "❌ Rejected" };
       const paymentClasses = { [PAYMENT_STATUS.PENDING]: "status-payment-pending", [PAYMENT_STATUS.APPROVED]: "status-payment-approved", [PAYMENT_STATUS.REJECTED]: "status-payment-rejected" };
-      
       document.getElementById("ordersList").innerHTML = userOrders.map(order => {
         const paymentStatus = order.paymentStatus || PAYMENT_STATUS.PENDING;
         const orderStatus = order.status || ORDER_STATUS.CONFIRMED;
@@ -738,11 +700,9 @@ function showOrders(){
           <div class="order-total">💰 <strong>Total: ${formatCurrency(order.total)}</strong></div>
         </div>`;
       }).join('');
-      console.log("✅ Orders displayed successfully");
     })
     .catch((err) => {
-      console.error("❌ Error loading orders:", err);
-      document.getElementById("ordersList").innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Error loading orders</h3><p>${err.message}</p><button onclick="showOrders()" class="btn" style="margin-top:10px;">Retry</button></div>`;
+      document.getElementById("ordersList").innerHTML = `<div class="empty-state"><h3>Error loading orders</h3><p>${err.message}</p><button onclick="showOrders()" class="btn" style="margin-top:10px;">Retry</button></div>`;
     });
 }
 
@@ -766,8 +726,6 @@ document.getElementById("paymentModal").onclick = e => { if(e.target === documen
 document.addEventListener("keydown", e => { if(e.key === "Escape"){ cartModal.classList.remove("open"); closeCheckoutForm(); closeOrders(); closeAuthModal(); closeProfileModal(); closePaymentModal(); } });
 
 document.addEventListener("DOMContentLoaded", function(){
-  console.log("🚀 Brandorivk loaded!");
-  console.log("🔥 Firebase Project:", firebaseConfig.projectId);
   renderProducts();
   loadData();
   updateCart();
@@ -775,5 +733,4 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 </body>
-
 </html>
